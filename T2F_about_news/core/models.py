@@ -31,7 +31,8 @@ class User(AbstractUser):
 
     telegram_id = models.IntegerField(
         unique=True,
-        blank=False,
+        blank=True,
+        null=True,
         verbose_name='Уникальный индентификатор telegram')
     role = models.CharField(
         choices=settings.ROLES,
@@ -69,9 +70,9 @@ class Post(models.Model):
     pub_date = models.DateTimeField(
         auto_now_add=True,
         verbose_name='Дата публикации')
-    image = models.ImageField(
-        blank=False,
-        verbose_name='Изображение')
+    # image = models.ImageField(
+    #     blank=False,
+    #     verbose_name='Изображение')
 
     class Meta:
         verbose_name = 'пост'
