@@ -91,7 +91,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 ROLES = [
     ('user', 'user'),
-    ('moderator', 'moderator'),
     ('admin', 'admin')
 ]
 

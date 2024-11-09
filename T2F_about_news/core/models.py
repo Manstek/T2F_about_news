@@ -52,10 +52,6 @@ class User(AbstractUser):
     def is_admin(self):
         return self.role == 'admin'
 
-    @property
-    def is_moderator(self):
-        return self.role == 'moderator'
-
 
 class Post(models.Model):
     author = models.ForeignKey(
