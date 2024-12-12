@@ -1,9 +1,9 @@
 from rest_framework import viewsets, permissions
 
+from blog.models import Post
+
 from .serializers import PostSerializer
 from .permissions import IsAuthorOrAdmin
-
-from core.models import Post
 
 
 class PostViewSets(viewsets.ModelViewSet):

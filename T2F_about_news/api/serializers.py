@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 
 from rest_framework import serializers
 
-from core.models import Post
+from blog.models import Post
 
 
 User = get_user_model()

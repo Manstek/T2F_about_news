@@ -20,8 +20,10 @@ INSTALLED_APPS = [
 
     'rest_framework',
     'djoser',
+    'rest_framework_simplejwt',
 
-    'core',
+    'users',
+    'blog',
     'api',
 ]
 
@@ -89,12 +91,7 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-ROLES = [
-    ('user', 'user'),
-    ('admin', 'admin')
-]
-
-AUTH_USER_MODEL = 'core.User'
+AUTH_USER_MODEL = 'users.User'
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
