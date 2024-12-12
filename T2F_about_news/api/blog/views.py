@@ -2,8 +2,8 @@ from rest_framework import viewsets, permissions
 
 from blog.models import Post
 
-from .blog.serializers import PostSerializer
-from .blog.permissions import IsAuthorOrAdmin
+from .serializers import PostSerializer
+from .permissions import IsAuthorOrAdmin
 
 
 class PostViewSets(viewsets.ModelViewSet):
