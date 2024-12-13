@@ -44,6 +44,9 @@ class User(AbstractUser):
         default='user',
         max_length=50,
         verbose_name='Роль')
+    avatar = models.ImageField(upload_to='users/avatar/',
+                               null=True, default=None,
+                               verbose_name='Аватарка')
 
     def save(self, *args, **kwargs):
         if self.is_superuser:
