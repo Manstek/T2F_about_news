@@ -32,7 +32,8 @@ class User(AbstractUser):
         Tag,
         related_name='users',
         blank=True,
-        verbose_name='Тэги')
+        verbose_name='Тэги',
+        through='UserTag')
 
     telegram_id = models.IntegerField(
         unique=True,
@@ -55,3 +56,17 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.username
+
+
+class UserTag(models.Model):
+    """Промежуточная таблица для связи M2M."""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    tag = models.ForeignKey(Tag, on_delete=models.PROTECT)
+
+    class Meta:
+        verbose_name = 'тег пользователя'
+        verbose_name_plural = 'Теги пользователей'
+
+    def __str__(self):
+        return f'Тег - {self.tag.name} пользователя {self.user.username}'

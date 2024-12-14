@@ -4,6 +4,8 @@ from django.contrib.auth import get_user_model
 
 from rest_framework import serializers
 
+from users.models import Tag, UserTag
+
 
 User = get_user_model()
 
@@ -47,3 +49,23 @@ class AvatarUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('avatar',)
+
+
+class SelectTagSerializer(serializers.ModelSerializer):
+    """Сериализатор для выбора тегов пользователем."""
+
+    tag = serializers.PrimaryKeyRelatedField(
+        many=True, required=True, queryset=Tag.objects.all())
+
+    class Meta:
+        model = UserTag
+        fields = ('tag', )
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        tags = validated_data['tag']
+
+        for tag in tags:
+            UserTag.objects.get_or_create(user=user, tag=tag)
+
+        return {'tags': tags}

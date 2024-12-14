@@ -5,7 +5,7 @@ from rest_framework.decorators import action
 from users.models import User
 
 from .serializers import (
-    CustomPasswordSerializer, UserSerializer, AvatarUserSerializer)
+    CustomPasswordSerializer, UserSerializer, AvatarUserSerializer, SelectTagSerializer)
 
 
 class CustomUserViewSet(viewsets.ModelViewSet):
@@ -42,6 +42,17 @@ class CustomUserViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_205_RESET_CONTENT)
         return Response(serializer.errors,
                         status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['post'],
+            permission_classes=[permissions.IsAuthenticated],
+            serializer_class=SelectTagSerializer)
+    def select_tag(self, request, pk=None):
+        serializer = SelectTagSerializer(data=request.data,
+                                         context={'request': request})
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
 class AvatarMeUserViewSet(viewsets.GenericViewSet,
