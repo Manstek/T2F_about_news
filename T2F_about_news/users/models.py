@@ -28,6 +28,8 @@ class Tag(models.Model):
 
 
 class User(AbstractUser):
+    """Модель представляющая пользователя."""
+
     tags = models.ManyToManyField(
         Tag,
         related_name='users',

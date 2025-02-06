@@ -10,6 +10,7 @@ from .permissions import IsAuthorOrAdmin, IsAdmin
 
 class PostViewSet(viewsets.ModelViewSet):
     """Вьюсет для работы с постами."""
+
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     permission_classes = [
@@ -23,6 +24,7 @@ class TagViewSet(viewsets.GenericViewSet,
                  mixins.ListModelMixin,
                  mixins.CreateModelMixin):
     """Вьюсет для работы с тегами."""
+
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly,]

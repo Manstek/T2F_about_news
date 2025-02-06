@@ -16,9 +16,9 @@ class Post(models.Model):
     pub_date = models.DateTimeField(
         auto_now_add=True,
         verbose_name='Дата публикации')
-    # image = models.ImageField(
-    #     blank=False,
-    #     verbose_name='Изображение')
+    image = models.ImageField(
+        blank=False,
+        verbose_name='Изображение')
 
     class Meta:
         verbose_name = 'пост'
