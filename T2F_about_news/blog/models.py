@@ -4,6 +4,8 @@ from users.models import User, Tag
 
 
 class Post(models.Model):
+    """Модель, представляющая публикацию пользователя."""
+
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -17,7 +19,7 @@ class Post(models.Model):
         auto_now_add=True,
         verbose_name='Дата публикации')
     image = models.ImageField(
-        blank=False,
+        blank=True,
         verbose_name='Изображение')
 
     class Meta:
@@ -31,6 +33,8 @@ class Post(models.Model):
 
 
 class Comment(models.Model):
+    """Модель, представляющая комментарий пользователя к публикации."""
+
     post = models.ForeignKey(
         Post,
         on_delete=models.CASCADE,
@@ -45,8 +49,19 @@ class Comment(models.Model):
         auto_now_add=True,
         verbose_name='Дата публикации')
 
+    class Meta:
+        verbose_name = 'комментарий'
+        verbose_name_plural = 'Комментарии'
+        ordering = ('pub_date',)
+        default_related_name = 'comments'
+
+    def __str__(self):
+        return f'Комментарий к посту - {self.post}'
+
 
 class News(models.Model):
+    """Модель, представляющая новость, полученную с API."""
+
     tags = models.ManyToManyField(
         Tag,
         related_name='news',
@@ -57,9 +72,15 @@ class News(models.Model):
         auto_now_add=True,
         verbose_name='Дата публикации')
 
-    def __str__(self):
-        return self.pk
+    class Meta:
+        verbose_name = 'новость'
+        verbose_name_plural = 'Новости'
+        ordering = ('pub_date',)
+        default_related_name = 'news'
+
+    # def __str__(self):
+    #     return self.pk
 
 
 class Notification(models.Model):
-    pass
+    """Модель, представляющая уведомления в телеграмме."""
