@@ -10,7 +10,7 @@ class IsAuthorOrAdmin(permissions.BasePermission):
 
 
 class IsAdmin(permissions.BasePermission):
-    """Является ли пользователь администратором, или владельцем."""
+    """Является ли пользователь администратором."""
 
     def has_permission(self, request, view):
         return request.user.is_superuser
