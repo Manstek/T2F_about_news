@@ -13,7 +13,7 @@ def fetch_news_by_tags(tags):
             'q': tag,  # Используем имя тега как ключевое слово для поиска
             'apiKey': api_key,
             'language': 'ru',  # Язык новостей (можно изменить)
-            'pageSize': 5,  # Количество новостей на один тег
+            'pageSize': 1,  # Количество новостей на один тег
         }
         response = requests.get(base_url, params=params)
         if response.status_code == 200:

@@ -62,15 +62,15 @@ class Comment(models.Model):
 class News(models.Model):
     """Модель, представляющая новость, полученную с API."""
 
-    tags = models.ManyToManyField(
-        Tag,
-        related_name='news',
-        verbose_name='Тэги')
+    tag = models.ForeignKey(Tag, on_delete=models.SET_NULL,
+                            related_name='news', null=True)
 
-    content = models.JSONField(verbose_name='Контент')
-    pub_date = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='Дата публикации')
+    source = models.CharField(max_length=100, verbose_name='Источник')
+    title = models.CharField(max_length=200, verbose_name='Заголовок')
+    description = models.TextField(verbose_name='Описание')
+    news_url = models.URLField(verbose_name='Ссылка на новость', db_index=True)
+    image_url = models.URLField(verbose_name='Ссылка на фото новости')
+    pub_date = models.DateTimeField(verbose_name='Дата публикации новости')
 
     class Meta:
         verbose_name = 'новость'
@@ -78,8 +78,21 @@ class News(models.Model):
         ordering = ('pub_date',)
         default_related_name = 'news'
 
-    # def __str__(self):
-    #     return self.pk
+
+class ShortNews(models.Model):
+    """Модель, представляющая сжатую новость, полученную с API."""
+
+    news = models.OneToOneField(News, on_delete=models.CASCADE)
+
+    text = models.TextField(verbose_name='Главная мысль сжатой новости')
+    pub_date = models.DateTimeField(
+        verbose_name='Дата публикации новости', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'сжатая новость'
+        verbose_name_plural = 'Сжатые новости'
+        ordering = ('pub_date',)
+        default_related_name = 'short_news'
 
 
 class Notification(models.Model):

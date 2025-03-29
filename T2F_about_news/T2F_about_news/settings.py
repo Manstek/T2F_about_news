@@ -4,6 +4,8 @@ from datetime import timedelta
 
 from pathlib import Path
 
+from celery.schedules import crontab
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'django-insecure-udujz1flp=v9t&q1*$nnqi$0m(=*4=sapk0eskl%t+bkt6s32s'
@@ -126,5 +128,12 @@ MEDIA_URL = '/media/'
 
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_BROKER_URL = 'redis://localhost:6379/0'  # URL для подключения к Redis
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'  # Хранение результатов задач
+
+CELERY_BEAT_SCHEDULE = {
+    'fetch-news-every-hour': {
+        'task': 'api.blog.tasks.start_news_fetch_chain',
+        'schedule': crontab(minute=0, hour='*/1'),
+    },
+}
