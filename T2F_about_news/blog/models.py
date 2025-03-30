@@ -2,6 +2,10 @@ from django.db import models
 
 from users.models import User, Tag
 
+MAX_POST_TITLE_LENGTH = 100
+MAX_SOURCE_LENGTH = 100
+MAX_NEWS_TITILE_LENGTH = 200
+
 
 class Post(models.Model):
     """Модель, представляющая публикацию пользователя."""
@@ -12,7 +16,7 @@ class Post(models.Model):
         verbose_name='Автор')
 
     title = models.CharField(
-        max_length=100,
+        max_length=MAX_POST_TITLE_LENGTH,
         verbose_name='Заголовок')
     text = models.TextField(verbose_name='Текст')
     pub_date = models.DateTimeField(
@@ -65,11 +69,15 @@ class News(models.Model):
     tag = models.ForeignKey(Tag, on_delete=models.SET_NULL,
                             related_name='news', null=True)
 
-    source = models.CharField(max_length=100, verbose_name='Источник')
-    title = models.CharField(max_length=200, verbose_name='Заголовок')
+    source = models.CharField(
+        max_length=MAX_SOURCE_LENGTH, verbose_name='Источник')
+    title = models.CharField(
+        max_length=MAX_NEWS_TITILE_LENGTH, verbose_name='Заголовок')
     description = models.TextField(verbose_name='Описание')
+
     news_url = models.URLField(verbose_name='Ссылка на новость', db_index=True)
     image_url = models.URLField(verbose_name='Ссылка на фото новости')
+
     pub_date = models.DateTimeField(verbose_name='Дата публикации новости')
 
     class Meta:

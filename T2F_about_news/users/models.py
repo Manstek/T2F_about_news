@@ -1,7 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
-
+MAX_LENGTH_NAME = 20
+MAX_LENGTH_ROLE = 50
 ROLES = [
     ('user', 'user'),
     ('admin', 'admin')
@@ -9,8 +10,10 @@ ROLES = [
 
 
 class Tag(models.Model):
+    """Модель тегов, используемых для новостей."""
+
     name = models.CharField(
-        max_length=20,
+        max_length=MAX_LENGTH_NAME,
         unique=True,
         verbose_name='Тэг')
     created_at = models.DateTimeField(
@@ -45,7 +48,7 @@ class User(AbstractUser):
     role = models.CharField(
         choices=ROLES,
         default='user',
-        max_length=50,
+        max_length=MAX_LENGTH_ROLE,
         verbose_name='Роль')
     avatar = models.ImageField(upload_to='users/avatar/',
                                null=True, default=None,
