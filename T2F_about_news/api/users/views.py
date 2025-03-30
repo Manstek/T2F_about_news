@@ -5,7 +5,8 @@ from rest_framework.decorators import action
 from users.models import User
 
 from .serializers import (
-    CustomPasswordSerializer, UserSerializer, AvatarUserSerializer, SelectTagSerializer)
+    CustomPasswordSerializer, UserSerializer,
+    AvatarUserSerializer, SelectTagSerializer)
 
 
 class CustomUserViewSet(viewsets.ModelViewSet):
@@ -22,6 +23,9 @@ class CustomUserViewSet(viewsets.ModelViewSet):
 
     def get_object(self):
         return self.request.user
+
+    def create(self, request, *args, **kwargs):
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
     @action(methods=['get'], detail=False,
             permission_classes=[permissions.IsAuthenticated],

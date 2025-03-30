@@ -8,7 +8,7 @@ from requests.exceptions import RequestException
 
 API_KEY_DEEPSEAK = os.getenv('API_KEY_DEEPSEAK', 'DEFAULT_KEY')
 MODEL = os.getenv('MODEL', 'DEFAULT_KEY')
-API_URL = "https://openrouter.ai/api/v1/chat/completions"
+API_URL = os.getenv('API_URL', 'DEFAULT_KEY')
 AMOUNT_NEWS = 2
 SYSTEM_CONTENT = (
     'Ты — инструмент для сжатия текста.'
@@ -91,7 +91,7 @@ def chat(prompt):
 
 def fetch_news_from_api(tag, api_key):
     """Отправка запроса к API и получение новостей по тегу."""
-    base_url = 'https://newsapi.org/v2/everything'
+    base_url = os.getenv('API_NEWS_URL', 'DEFAULT_KEY')
     params = {
         'q': tag.name,
         'apiKey': api_key,

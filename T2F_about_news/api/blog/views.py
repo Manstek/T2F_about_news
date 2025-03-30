@@ -1,6 +1,8 @@
 from django.shortcuts import get_object_or_404
 
 from rest_framework import viewsets, permissions, mixins
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 from blog.models import Post, News
 
@@ -32,7 +34,8 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user,
-                        post=get_object_or_404(Post, pk=self.kwargs['post_id']))
+                        post=get_object_or_404(Post,
+                                               pk=self.kwargs['post_id']))
 
     def get_queryset(self):
         post = get_object_or_404(Post, pk=self.kwargs['post_id'])
@@ -70,3 +73,10 @@ class NewsViewSet(viewsets.ModelViewSet):
         if tag_name:
             return News.objects.filter(tags__name=tag_name)
         return News.objects.all()
+
+    @action(detail=False, methods=['get'], url_path='my')
+    def my_news(self, request):
+        user_tags = request.user.tags.all()
+        news = News.objects.filter(tag__in=user_tags).distinct()
+        serializer = self.get_serializer(news, many=True)
+        return Response(serializer.data)
