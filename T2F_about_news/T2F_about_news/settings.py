@@ -5,10 +5,13 @@ from datetime import timedelta
 from pathlib import Path
 
 from celery.schedules import crontab
+from dotenv import load_dotenv
+
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-udujz1flp=v9t&q1*$nnqi$0m(=*4=sapk0eskl%t+bkt6s32s'
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'DEFAULT_KEY')
 
 DEBUG = True
 
@@ -26,6 +29,7 @@ INSTALLED_APPS = [
     'djoser',
     'rest_framework_simplejwt',
     'drf_yasg',
+    'django_celery_results',
 
     'users',
     'blog',
@@ -62,12 +66,28 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'T2F_about_news.wsgi.application'
 
+# База для разработки без фоновых задач (без celery + redis)
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+
+
+# База для прода + для фоновых задач при разработке
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('POSTGRES_DB', 'DEFAULT_KEY'),
+        'USER': os.getenv('POSTGRES_USER', 'DEFAULT_KEY'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'DEFAULT_KEY'),
+        'HOST': os.getenv('DB_HOST_LOCAL', 'DEFAULT_KEY'),
+        # 'HOST': os.getenv('DB_HOST', 'DEFAULT_KEY'),  # для docker-compose
+        'PORT': os.getenv('DB_PORT', 5432)
     }
 }
+
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -128,12 +148,15 @@ MEDIA_URL = '/media/'
 
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
-CELERY_BROKER_URL = 'redis://localhost:6379/0'  # URL для подключения к Redis
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'  # Хранение результатов задач
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_CACHE_BACKEND = 'django-cache'
 
 CELERY_BEAT_SCHEDULE = {
     'fetch-news-every-hour': {
-        'task': 'api.blog.tasks.start_news_fetch_chain',
+        'task': 'api.blog.tasks.fetch_news_by_tags',
         'schedule': crontab(minute=0, hour='*/1'),
     },
 }
