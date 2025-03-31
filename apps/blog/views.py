@@ -9,9 +9,9 @@ from apps.blog.models import Post, News, ShortNews
 
 from apps.users.models import Tag
 
-from apps.api.blog.serializers import (
+from apps.blog.serializers import (
     PostSerializer, TagSerializer, CommentSerializer, NewsSerializer)
-from apps.api.blog.permissions import IsAuthorOrAdmin, IsAdmin
+from apps.blog.permissions import IsAuthorOrAdmin, IsAdmin
 
 
 class PostViewSet(viewsets.ModelViewSet):

@@ -6,6 +6,7 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 
+
 schema_view = get_schema_view(
     openapi.Info(
         title="API Documentation",
@@ -19,8 +20,11 @@ schema_view = get_schema_view(
     permission_classes=(permissions.AllowAny,),
 )
 
+
 urlpatterns = [
-    path('api/', include('apps.api.urls')),
+    path('api/', include('apps.users.urls')),
+    path('api/', include('apps.blog.urls')),
+
     path('admin/', admin.site.urls),
 
     re_path(r'^swagger(?P<format>\.json|\.yaml)$',

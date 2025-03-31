@@ -3,8 +3,8 @@ import os
 from django.shortcuts import get_object_or_404
 from celery import shared_task
 
-
-from .compress_news_utils import fetch_article_text, fetch_news_from_api
+from apps.blog.compress_news_utils import (
+    fetch_article_text, fetch_news_from_api)
 from apps.blog.models import Tag, News, ShortNews
 
 AMOUNT_NEWS = 2

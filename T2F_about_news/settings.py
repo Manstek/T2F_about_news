@@ -33,7 +33,6 @@ INSTALLED_APPS = [
 
     'apps.users',
     'apps.blog',
-    'apps.api',
 ]
 
 MIDDLEWARE = [
@@ -134,7 +133,7 @@ SIMPLE_JWT = {
 
 DJOSER = {
     'SERIALIZERS': {
-        'user_create': 'api.users.serializers.CustomUserCreateSerializer',
+        'user_create': 'apps.users.serializers.CustomUserCreateSerializer',
     },
 }
 

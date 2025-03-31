@@ -4,7 +4,7 @@ from rest_framework.decorators import action
 
 from apps.users.models import User
 
-from apps.api.users.serializers import (
+from apps.users.serializers import (
     CustomPasswordSerializer, UserSerializer,
     AvatarUserSerializer, SelectTagSerializer)
 

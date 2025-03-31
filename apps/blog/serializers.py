@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.api.users.serializers import Base64ImageField
+from apps.users.serializers import Base64ImageField
 
 from apps.blog.models import Post, Comment, News
 
