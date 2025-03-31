@@ -7,7 +7,7 @@ import sys
 def main():
     """Run administrative tasks."""
     os.environ.setdefault('DJANGO_SETTINGS_MODULE',
-                          'T2F_about_news.T2F_about_news.settings')
+                          'T2F_about_news.settings')
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

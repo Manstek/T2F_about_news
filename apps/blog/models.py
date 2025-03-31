@@ -1,6 +1,6 @@
 from django.db import models
 
-from users.models import User, Tag
+from apps.users.models import User, Tag
 
 MAX_POST_TITLE_LENGTH = 100
 MAX_SOURCE_LENGTH = 100

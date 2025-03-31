@@ -1,10 +1,10 @@
 from rest_framework import serializers
 
-from api.users.serializers import Base64ImageField
+from apps.api.users.serializers import Base64ImageField
 
-from blog.models import Post, Comment, News
+from apps.blog.models import Post, Comment, News
 
-from users.models import Tag
+from apps.users.models import Tag
 
 
 class PostSerializer(serializers.ModelSerializer):

@@ -5,13 +5,13 @@ from rest_framework import viewsets, permissions, mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from blog.models import Post, News, ShortNews
+from apps.blog.models import Post, News, ShortNews
 
-from users.models import Tag
+from apps.users.models import Tag
 
-from .serializers import (
+from apps.api.blog.serializers import (
     PostSerializer, TagSerializer, CommentSerializer, NewsSerializer)
-from .permissions import IsAuthorOrAdmin, IsAdmin
+from apps.api.blog.permissions import IsAuthorOrAdmin, IsAdmin
 
 
 class PostViewSet(viewsets.ModelViewSet):

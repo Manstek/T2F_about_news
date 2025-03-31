@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'DEFAULT_KEY')
 
@@ -31,9 +31,9 @@ INSTALLED_APPS = [
     'drf_yasg',
     'django_celery_results',
 
-    'users',
-    'blog',
-    'api',
+    'apps.users',
+    'apps.blog',
+    'apps.api',
 ]
 
 MIDDLEWARE = [
@@ -46,7 +46,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'T2F_about_news.T2F_about_news.urls'
+ROOT_URLCONF = 'T2F_about_news.urls'
 
 TEMPLATES = [
     {
@@ -64,29 +64,29 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'T2F_about_news.T2F_about_news.wsgi.application'
+WSGI_APPLICATION = 'T2F_about_news.wsgi.application'
 
 # База для разработки без фоновых задач (без celery + redis)
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
 
 
 # База для прода + для фоновых задач при разработке
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB', 'DEFAULT_KEY'),
-        'USER': os.getenv('POSTGRES_USER', 'DEFAULT_KEY'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'DEFAULT_KEY'),
-        'HOST': os.getenv('DB_HOST_LOCAL', 'DEFAULT_KEY'),
-        # 'HOST': os.getenv('DB_HOST', 'DEFAULT_KEY'),  # для docker-compose
-        'PORT': os.getenv('DB_PORT', 5432)
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': os.getenv('POSTGRES_DB', 'DEFAULT_KEY'),
+#         'USER': os.getenv('POSTGRES_USER', 'DEFAULT_KEY'),
+#         'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'DEFAULT_KEY'),
+#         'HOST': os.getenv('DB_HOST_LOCAL', 'DEFAULT_KEY'),
+#         # 'HOST': os.getenv('DB_HOST', 'DEFAULT_KEY'),  # для docker-compose
+#         'PORT': os.getenv('DB_PORT', 5432)
+#     }
+# }
 
 
 AUTH_PASSWORD_VALIDATORS = [

@@ -5,8 +5,8 @@ T2F About News - дипломная работа на фреймфорке Djang
 
 ### Стек технологий:
 
-- **Python 3.9** 
-- **Django 4.2**: Веб-фреймворк.
+- **Python 3.13** 
+- **Django 5.0**: Веб-фреймворк.
 - **Django REST Framework (DRF)**: создание API.
 - **DRF Simple JWT**: для аутентификации и авторизации.
 - **Django Filters**: фильтрация данных.

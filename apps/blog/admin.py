@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from blog.models import Post, Comment, News, ShortNews
+from apps.blog.models import Post, Comment, News, ShortNews
 
 admin.site.register(Post)
 admin.site.register(Comment)

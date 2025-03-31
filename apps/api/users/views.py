@@ -2,9 +2,9 @@ from rest_framework import viewsets, status, permissions, mixins
 from rest_framework.response import Response
 from rest_framework.decorators import action
 
-from users.models import User
+from apps.users.models import User
 
-from .serializers import (
+from apps.api.users.serializers import (
     CustomPasswordSerializer, UserSerializer,
     AvatarUserSerializer, SelectTagSerializer)
 

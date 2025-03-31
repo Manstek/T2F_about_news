@@ -7,7 +7,7 @@ from djoser.serializers import UserCreateSerializer
 
 from rest_framework import serializers
 
-from users.models import Tag, UserTag
+from apps.users.models import Tag, UserTag
 
 
 User = get_user_model()

@@ -5,7 +5,7 @@ from celery import shared_task
 
 
 from .compress_news_utils import fetch_article_text, fetch_news_from_api
-from blog.models import Tag, News, ShortNews
+from apps.blog.models import Tag, News, ShortNews
 
 AMOUNT_NEWS = 2
 
