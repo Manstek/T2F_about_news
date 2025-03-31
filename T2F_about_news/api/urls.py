@@ -11,7 +11,9 @@ router.register(r'users', CustomUserViewSet)
 urlpatterns = [
     path('users/me/avatar/', AvatarMeUserViewSet.as_view({
         'delete': 'destroy', 'put': 'update'})),
+
     path('auth/', include('api.users.urls')),
+
     path('', include('api.blog.urls')),
     path('', include(router.urls))
 ]
