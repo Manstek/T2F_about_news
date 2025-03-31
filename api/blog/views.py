@@ -1,10 +1,11 @@
 from django.shortcuts import get_object_or_404
+from django.db.models import Prefetch
 
 from rest_framework import viewsets, permissions, mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from blog.models import Post, News
+from blog.models import Post, News, ShortNews
 
 from users.models import Tag
 
@@ -76,7 +77,14 @@ class NewsViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='my')
     def my_news(self, request):
+        """Возвращает сжатые версии по тегам текущего пользователя."""
         user_tags = request.user.tags.all()
         news = News.objects.filter(tag__in=user_tags).distinct()
-        serializer = self.get_serializer(news, many=True)
+
+        news_with_shorts = news.prefetch_related(
+            Prefetch('short_news', queryset=ShortNews.objects.all())
+        )
+
+        serializer = self.get_serializer(news_with_shorts, many=True)
+
         return Response(serializer.data)
