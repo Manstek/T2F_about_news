@@ -35,12 +35,6 @@ python3 -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-Перейти в основную директорию:
-
-```
-cd T2F_about_news/
-```
-
 
 Выполнить миграции:
 
