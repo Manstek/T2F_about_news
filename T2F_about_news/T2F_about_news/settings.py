@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'DEFAULT_KEY')
 
@@ -46,7 +46,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'T2F_about_news.urls'
+ROOT_URLCONF = 'T2F_about_news.T2F_about_news.urls'
 
 TEMPLATES = [
     {
@@ -64,7 +64,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'T2F_about_news.wsgi.application'
+WSGI_APPLICATION = 'T2F_about_news.T2F_about_news.wsgi.application'
 
 # База для разработки без фоновых задач (без celery + redis)
 # DATABASES = {

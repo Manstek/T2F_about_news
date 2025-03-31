@@ -15,6 +15,7 @@ User = get_user_model()
 
 class CustomUserCreateSerializer(UserCreateSerializer):
     """Сериализатор для создания пользователя."""
+
     first_name = serializers.CharField(required=True)
     last_name = serializers.CharField(required=True)
 
