@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'djoser',
     'rest_framework_simplejwt',
     'drf_yasg',
+    'django_celery_beat',
     'django_celery_results',
 
     'apps.users',
@@ -66,26 +67,26 @@ TEMPLATES = [
 WSGI_APPLICATION = 'T2F_about_news.wsgi.application'
 
 # База для разработки без фоновых задач (без celery + redis)
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 
 
 # База для прода + для фоновых задач при разработке
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': os.getenv('POSTGRES_DB', 'DEFAULT_KEY'),
-#         'USER': os.getenv('POSTGRES_USER', 'DEFAULT_KEY'),
-#         'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'DEFAULT_KEY'),
-#         'HOST': os.getenv('DB_HOST_LOCAL', 'DEFAULT_KEY'),
-#         # 'HOST': os.getenv('DB_HOST', 'DEFAULT_KEY'),  # для docker-compose
-#         'PORT': os.getenv('DB_PORT', 5432)
-#     }
-# }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('POSTGRES_DB', 'DEFAULT_KEY'),
+        'USER': os.getenv('POSTGRES_USER', 'DEFAULT_KEY'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'DEFAULT_KEY'),
+        'HOST': os.getenv('DB_HOST_LOCAL', 'DEFAULT_KEY'),
+        # 'HOST': os.getenv('DB_HOST', 'DEFAULT_KEY'),  # для docker-compose
+        'PORT': os.getenv('DB_PORT', 5432)
+    }
+}
 
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -153,9 +154,4 @@ CELERY_RESULT_BACKEND = os.getenv('LOCAL_CELERY_RESULT_BACKEND', 'DEFAULT_KEY')
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_CACHE_BACKEND = 'django-cache'
 
-CELERY_BEAT_SCHEDULE = {
-    'fetch-news-every-hour': {
-        'task': 'api.blog.tasks.fetch_news_by_tags',
-        'schedule': crontab(minute=0, hour='*/1'),
-    },
-}
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
