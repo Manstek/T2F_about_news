@@ -4,7 +4,6 @@ from datetime import timedelta
 
 from pathlib import Path
 
-from celery.schedules import crontab
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -67,26 +66,26 @@ TEMPLATES = [
 WSGI_APPLICATION = 'T2F_about_news.wsgi.application'
 
 # База для разработки без фоновых задач (без celery + redis)
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
 
 
 # База для прода + для фоновых задач при разработке
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB', 'DEFAULT_KEY'),
-        'USER': os.getenv('POSTGRES_USER', 'DEFAULT_KEY'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'DEFAULT_KEY'),
-        'HOST': os.getenv('DB_HOST_LOCAL', 'DEFAULT_KEY'),
-        # 'HOST': os.getenv('DB_HOST', 'DEFAULT_KEY'),  # для docker-compose
-        'PORT': os.getenv('DB_PORT', 5432)
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': os.getenv('POSTGRES_DB', 'DEFAULT_KEY'),
+#         'USER': os.getenv('POSTGRES_USER', 'DEFAULT_KEY'),
+#         'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'DEFAULT_KEY'),
+#         'HOST': os.getenv('DB_HOST_LOCAL', 'DEFAULT_KEY'),
+#         # 'HOST': os.getenv('DB_HOST', 'DEFAULT_KEY'),  # для docker-compose
+#         'PORT': os.getenv('DB_PORT', 5432)
+#     }
+# }
 
 
 AUTH_PASSWORD_VALIDATORS = [
