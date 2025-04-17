@@ -35,8 +35,13 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 class NewsSerializer(serializers.ModelSerializer):
-    """Сериализатор для отоброжения новостей."""
+    """Сериализатор для отображения новостей."""
+
+    tag = serializers.SlugRelatedField(
+        slug_field='name',
+        queryset=Tag.objects.all()
+    )
 
     class Meta:
         model = News
-        fields = ('__all__')
+        fields = '__all__'

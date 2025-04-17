@@ -83,7 +83,7 @@ class News(models.Model):
     class Meta:
         verbose_name = 'новость'
         verbose_name_plural = 'Новости'
-        ordering = ('pub_date',)
+        ordering = ('-pub_date',)
         default_related_name = 'news'
 
 

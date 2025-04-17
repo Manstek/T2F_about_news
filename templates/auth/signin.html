@@ -1,0 +1,138 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход в систему</title>
+    <link rel="stylesheet" href="{% static 'css/signin.css' %}">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="logo">
+                <!-- Вставьте логотип при необходимости -->
+                <!-- <img src="/static/images/logo.png" alt="Логотип"> -->
+            </div>
+            
+            <div class="auth-header">
+                <h2>Вход в систему</h2>
+                <p>Введите свои учетные данные</p>
+            </div>
+            
+            <form id="loginForm">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="username">Логин или Email</label>
+                    <input type="text" id="username" name="username" class="form-control" autocomplete="username" required>
+                    <div id="usernameError" class="error-message"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Пароль</label>
+                    <input type="password" id="password" name="password" class="form-control" autocomplete="current-password" required>
+                    <div id="passwordError" class="error-message"></div>
+                </div>
+                
+                <button type="submit" class="btn">Войти</button>
+            </form>
+            
+            <div class="auth-footer">
+                <p>Нет аккаунта? <a href="/auth/signup/">Зарегистрируйтесь</a></p>
+                <p><a href="/auth/password/reset/">Забыли пароль?</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginForm = document.getElementById('loginForm');
+            const errorElements = {
+                username: document.getElementById('usernameError'),
+                password: document.getElementById('passwordError')
+            };
+            
+            // Функция для отображения ошибок
+            function showError(field, message) {
+                errorElements[field].textContent = message;
+                errorElements[field].classList.add('show');
+            }
+            
+            // Функция для очистки ошибок
+            function clearErrors() {
+                Object.values(errorElements).forEach(el => {
+                    el.textContent = '';
+                    el.classList.remove('show');
+                });
+            }
+            
+            // Обработчик отправки формы
+            loginForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                clearErrors();
+                
+                const formData = {
+                    username: document.getElementById('username').value.trim(),
+                    password: document.getElementById('password').value
+                };
+                
+                try {
+                    const response = await fetch('/api/auth/signin/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                        },
+                        body: JSON.stringify(formData)
+                    });
+                    
+                    // Обрабатываем ответ сервера
+                    if (response.status === 204) { // No Content
+                        window.location.href = '/'; // Перенаправление на главную
+                        return;
+                    }
+    
+                    const data = await response.json();
+    
+                    if (response.ok) {
+                        // Сохраняем токены (если используется JWT)
+                        if (data.access) {
+                            localStorage.setItem('access_token', data.access);
+                            localStorage.setItem('refresh_token', data.refresh);
+                        }
+                        
+                        // Перенаправляем на главную страницу
+                        window.location.href = '/';
+                    } else {
+                        // Обработка ошибок
+                        if (data.non_field_errors) {
+                            showError('password', data.non_field_errors.join(' '));
+                        } else if (data.detail) {
+                            showError('password', data.detail);
+                        } else {
+                            Object.keys(data).forEach(field => {
+                                if (errorElements[field]) {
+                                    showError(field, data[field].join(' '));
+                                }
+                            });
+                        }
+                    }
+                } catch (error) {
+                    console.error('Ошибка:', error);
+                    showError('password', 'Ошибка соединения с сервером');
+                }
+            });
+            
+            // Очистка ошибок при изменении полей
+            document.getElementById('username').addEventListener('input', function() {
+                errorElements.username.classList.remove('show');
+            });
+            
+            document.getElementById('password').addEventListener('input', function() {
+                errorElements.password.classList.remove('show');
+            });
+        });
+    </script>
+</body>
+</html>

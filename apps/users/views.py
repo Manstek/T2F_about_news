@@ -8,6 +8,9 @@ from apps.users.serializers import (
     CustomPasswordSerializer, UserSerializer,
     AvatarUserSerializer, SelectTagSerializer)
 
+from django.shortcuts import render
+from django.views import View
+
 
 class CustomUserViewSet(viewsets.ModelViewSet):
     """Вьюсет для взаимодейсвия с пользователями."""
@@ -83,3 +86,18 @@ class AvatarMeUserViewSet(viewsets.GenericViewSet,
             user.avatar = serializer.validated_data['avatar']
             user.save()
             return Response(status=status.HTTP_200_OK)
+
+
+class SignUpView(View):
+    def get(self, request):
+        return render(request, 'auth/signup.html')
+
+
+class LoginView(View):
+    def get(self, request):
+        return render(request, 'auth/signin.html')
+
+
+class MainView(View):
+    def get(self, request):
+        return render(request, 'main.html')

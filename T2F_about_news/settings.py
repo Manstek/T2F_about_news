@@ -14,7 +14,7 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'DEFAULT_KEY')
 
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = []  # TODO go to .env
+ALLOWED_HOSTS: list = []  # TODO go to .env
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -50,7 +50,7 @@ ROOT_URLCONF = 'T2F_about_news.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates'),],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -147,6 +147,10 @@ MEDIA_URL = '/media/'
 
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
+
 CELERY_BROKER_URL = os.getenv('LOCAL_CELERY_BROKER_URL', 'DEFAYLT_KEY')
 CELERY_RESULT_BACKEND = os.getenv('LOCAL_CELERY_RESULT_BACKEND', 'DEFAULT_KEY')
 
@@ -154,3 +158,5 @@ CELERY_RESULT_BACKEND = 'django-db'
 CELERY_CACHE_BACKEND = 'django-cache'
 
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+CSRF_TRUSTED_ORIGINS = ['http://localhost:8000']

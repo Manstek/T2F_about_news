@@ -21,5 +21,5 @@ urlpatterns = [
     path('users/me/avatar/', AvatarMeUserViewSet.as_view({
         'delete': 'destroy', 'put': 'update'})),
 
-    path('', include(router.urls))
+    path('', include(router.urls)),
 ]
