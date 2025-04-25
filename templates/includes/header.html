@@ -1,15 +1,15 @@
 <header>
     <div class="logo">T2F about News</div>
     <nav class="nav-links">
-        <a href="#" >Новости</a>
+        <a href="#">Новости</a>
         <a href="#">Посты</a>
         <a href="#">Теги</a>
     </nav>
 
     <div class="profile-menu">
         <button class="profile-btn" id="profileBtn">
-            <div class="profile-avatar">ИИ</div>
-            <span>Иван Иванов</span>
+            <div class="profile-avatar" id="userAvatar">ИИ</div>
+            <span id="userName">Загрузка...</span>
         </button>
         
         <div class="dropdown" id="profileDropdown">
@@ -37,3 +37,98 @@
         </div>
     </div>
 </header>
+
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Проверка авторизации
+        if (!localStorage.getItem('access_token')) {
+            window.location.href = '/auth/signin/';
+            return;
+        }
+
+        // Загрузка данных пользователя
+        async function loadUserData() {
+            try {
+                const response = await fetch('/api/users/me/', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) return null;
+                return await response.json();
+            } catch {
+                return null;
+            }
+        }
+        
+        // Обновление интерфейса
+        function updateUserProfile(userData) {
+            const userNameElement = document.getElementById('userName');
+            const avatarElement = document.getElementById('userAvatar');
+            
+            if (userData?.first_name && userData?.last_name) {
+                userNameElement.textContent = `${userData.first_name} ${userData.last_name}`;
+                avatarElement.textContent = userData.first_name[0] + userData.last_name[0];
+            }
+        }
+        
+        // Инициализация выпадающего меню
+        function initDropdownMenu() {
+            const profileBtn = document.getElementById('profileBtn');
+            const dropdown = document.getElementById('profileDropdown');
+            
+            if (!profileBtn || !dropdown) return;
+            
+            // Очистка старых обработчиков
+            const newProfileBtn = profileBtn.cloneNode(true);
+            const newDropdown = dropdown.cloneNode(true);
+            
+            profileBtn.replaceWith(newProfileBtn);
+            dropdown.replaceWith(newDropdown);
+            
+            // Новые обработчики
+            document.getElementById('profileBtn').addEventListener('click', function(e) {
+                e.stopPropagation();
+                document.getElementById('profileDropdown').classList.toggle('show');
+            });
+            
+            document.addEventListener('click', function(e) {
+                const dropdown = document.getElementById('profileDropdown');
+                const profileBtn = document.getElementById('profileBtn');
+                
+                if (!dropdown.contains(e.target) && e.target !== profileBtn) {
+                    dropdown.classList.remove('show');
+                }
+            });
+        }
+        
+        // Обработчик выхода
+        function initLogout() {
+            document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('refresh_token');
+                localStorage.removeItem('user_profile');
+                window.location.href = '/auth/signin/';
+            });
+        }
+
+        // Основной поток выполнения
+        try {
+            initDropdownMenu();
+            const userData = await loadUserData();
+            
+            if (userData) {
+                updateUserProfile(userData);
+                localStorage.setItem('user_profile', JSON.stringify(userData));
+                initDropdownMenu();
+            }
+            
+            initLogout();
+        } catch {
+            document.getElementById('userName').textContent = 'Пользователь';
+        }
+    });
+</script>

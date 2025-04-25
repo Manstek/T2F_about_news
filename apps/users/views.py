@@ -100,4 +100,4 @@ class LoginView(View):
 
 class MainView(View):
     def get(self, request):
-        return render(request, 'main.html')
+        return render(request, 'base.html')
