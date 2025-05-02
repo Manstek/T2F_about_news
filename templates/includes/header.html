@@ -70,7 +70,26 @@
             
             if (userData?.first_name && userData?.last_name) {
                 userNameElement.textContent = `${userData.first_name} ${userData.last_name}`;
-                avatarElement.textContent = userData.first_name[0] + userData.last_name[0];
+                
+                // Проверка наличия аватарки
+                if (userData.avatar) {
+                    // Если есть URL аватарки - загружаем изображение
+                    avatarElement.innerHTML = '';
+                    const img = document.createElement('img');
+                    img.src = userData.avatar;
+                    img.alt = 'Аватар';
+                    img.onerror = () => {
+                        // Если изображение не загрузилось - показываем инициалы
+                        avatarElement.textContent = userData.first_name[0] + userData.last_name[0];
+                        avatarElement.style.display = 'flex'; // Восстанавливаем flex для инициалов
+                    };
+                    avatarElement.appendChild(img);
+                    avatarElement.style.display = 'block'; // Меняем на block для изображения
+                } else {
+                    // Если нет аватарки - показываем инициалы
+                    avatarElement.textContent = userData.first_name[0] + userData.last_name[0];
+                    avatarElement.style.display = 'flex'; // Flex для центрирования инициалов
+                }
             }
         }
         
