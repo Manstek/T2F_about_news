@@ -10,7 +10,7 @@ from drf_yasg import openapi
 
 from apps.users.views import (
     SignUpView, LoginView, MainView, PasswordResetView,
-    TagListView, PostListView, NewsListView)
+    TagListView, PostListView, NewsListView, NewsDetailView)
 
 
 schema_view = get_schema_view(
@@ -61,6 +61,9 @@ urlpatterns = [
      path('news/',
           NewsListView.as_view(),
           name='news'),
+     path('news/<int:pk>/',
+          NewsDetailView.as_view(),
+          name='news_detail'),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
