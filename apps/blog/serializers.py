@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from apps.users.serializers import Base64ImageField, UserSerializer
 
-from apps.blog.models import Post, Comment, News
+from apps.blog.models import Post, Comment, News, ShortNews
 
 from apps.users.models import Tag
 
@@ -44,14 +44,16 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = ('id', 'text', 'pub_date')
 
 
-class NewsSerializer(serializers.ModelSerializer):
-    """Сериализатор для отображения новостей."""
+class ShortNewsListSerializer(serializers.ModelSerializer):
+    """Сериализатор для отображения сжатых новостей."""
 
-    tag = serializers.SlugRelatedField(
-        slug_field='name',
-        queryset=Tag.objects.all()
-    )
+    tag = serializers.CharField(source='news.tag.name')
+    source = serializers.CharField(source='news.source')
+    news_url = serializers.URLField(source='news.news_url')
+    image_url = serializers.URLField(source='news.image_url')
+    pub_date = serializers.DateTimeField(source='news.pub_date')
 
     class Meta:
-        model = News
-        fields = '__all__'
+        model = ShortNews
+        fields = ('id', 'text', 'tag', 'source', 'image_url', 'news_url',
+                  'pub_date')

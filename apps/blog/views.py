@@ -10,7 +10,7 @@ from apps.blog.models import Post, News, ShortNews
 from apps.users.models import Tag
 
 from apps.blog.serializers import (
-    PostSerializer, TagSerializer, CommentSerializer, NewsSerializer,
+    PostSerializer, TagSerializer, CommentSerializer, ShortNewsListSerializer,
     PostCreateSerializer)
 from apps.blog.permissions import IsAuthorOrAdmin, IsAdmin
 
@@ -72,25 +72,28 @@ class TagViewSet(viewsets.GenericViewSet,
 class NewsViewSet(viewsets.ModelViewSet):
     """Вьюсет для работы с новостями."""
 
-    serializer_class = NewsSerializer
+    serializer_class = ShortNewsListSerializer
     http_method_names = ['get']
-
-    def get_queryset(self):
-        tag_name = self.kwargs.get('tag')
-        if tag_name:
-            return News.objects.filter(tags__name=tag_name)
-        return News.objects.all()
+    queryset = ShortNews.objects.all()
 
     @action(detail=False, methods=['get'], url_path='my')
     def my_news(self, request):
-        """Возвращает сжатые версии по тегам текущего пользователя."""
+        """Возвращает сжатые новости по тегам текущего пользователя."""
         user_tags = request.user.tags.all()
-        news = News.objects.filter(tag__in=user_tags).distinct()
 
-        news_with_shorts = news.prefetch_related(
-            Prefetch('short_news', queryset=ShortNews.objects.all())
-        )
+        if not user_tags.exists():
+            return Response([])
 
-        serializer = self.get_serializer(news_with_shorts, many=True)
+        short_news = ShortNews.objects.filter(
+            news__tag__in=user_tags).select_related(
+                'news', 'news__tag').distinct()
 
+        serializer = ShortNewsListSerializer(short_news, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='short')
+    def short_news(self, request):
+        """Возвращает список сжатых новостей с основными данными из News."""
+        short_news = ShortNews.objects.select_related('news').all()
+        serializer = ShortNewsListSerializer(short_news, many=True)
         return Response(serializer.data)
