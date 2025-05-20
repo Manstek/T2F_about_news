@@ -10,7 +10,8 @@ from apps.blog.models import Post, News, ShortNews
 from apps.users.models import Tag
 
 from apps.blog.serializers import (
-    PostSerializer, TagSerializer, CommentSerializer, NewsSerializer)
+    PostSerializer, TagSerializer, CommentSerializer, NewsSerializer,
+    PostCreateSerializer)
 from apps.blog.permissions import IsAuthorOrAdmin, IsAdmin
 
 
@@ -25,6 +26,11 @@ class PostViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return PostCreateSerializer
+        return super().get_serializer_class()
 
 
 class CommentViewSet(viewsets.ModelViewSet):

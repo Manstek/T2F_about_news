@@ -1,10 +1,11 @@
 <header>
     <div class="logo">T2F about News</div>
     <nav class="nav-links">
-        <a href="#">Новости</a>
-        <a href="#">Посты</a>
-        <a href="#">Теги</a>
-    </nav>
+        <a href="{% url 'main' %}">Главная</a>
+        <a href="{% url 'news' %}">Новости</a>
+        <a href="{% url 'posts' %}">Посты</a>
+        <a href="{% url 'tag_list' %}">Теги</a>
+    </nav>  
 
     <div class="profile-menu">
         <button class="profile-btn" id="profileBtn">
@@ -21,11 +22,11 @@
                 <i class="icon">⚙️</i>
                 <span>Настройки</span>
             </div>
-            <div class="dropdown-item">
+            <div class="dropdown-item" id="changeAvatarBtn">
                 <i class="icon">🖼️</i>
                 <span>Изменить аватар</span>
             </div>
-            <div class="dropdown-item">
+            <div class="dropdown-item" id="changePasswordBtn">
                 <i class="icon">🔒</i>
                 <span>Изменить пароль</span>
             </div>
@@ -33,6 +34,21 @@
             <div class="dropdown-item" id="logoutBtn">
                 <i class="icon">🚪</i>
                 <span>Выйти</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Popup для изменения аватара -->
+    <div class="avatar-popup" id="avatarPopup">
+        <div class="avatar-popup-content">
+            <div class="avatar-preview" id="avatarPreview">
+                <!-- Здесь будет отображаться текущий аватар или инициалы -->
+            </div>
+            <div class="avatar-actions">
+                <label for="avatarUpload" class="avatar-btn">Выбрать файл</label>
+                <input type="file" id="avatarUpload" accept="image/*" style="display: none;">
+                <button class="avatar-btn delete-btn" id="deleteAvatarBtn">Удалить</button>
+                <button class="avatar-btn cancel-btn" id="cancelAvatarBtn">Отмена</button>
             </div>
         </div>
     </div>
@@ -81,14 +97,14 @@
                     img.onerror = () => {
                         // Если изображение не загрузилось - показываем инициалы
                         avatarElement.textContent = userData.first_name[0] + userData.last_name[0];
-                        avatarElement.style.display = 'flex'; // Восстанавливаем flex для инициалов
+                        avatarElement.style.display = 'flex';
                     };
                     avatarElement.appendChild(img);
-                    avatarElement.style.display = 'block'; // Меняем на block для изображения
+                    avatarElement.style.display = 'block';
                 } else {
                     // Если нет аватарки - показываем инициалы
                     avatarElement.textContent = userData.first_name[0] + userData.last_name[0];
-                    avatarElement.style.display = 'flex'; // Flex для центрирования инициалов
+                    avatarElement.style.display = 'flex';
                 }
             }
         }
@@ -117,7 +133,7 @@
                 const dropdown = document.getElementById('profileDropdown');
                 const profileBtn = document.getElementById('profileBtn');
                 
-                if (!dropdown.contains(e.target) && e.target !== profileBtn) {
+                if (!dropdown.contains(e.target) && e.target !== profileBtn && !profileBtn.contains(e.target)) {
                     dropdown.classList.remove('show');
                 }
             });
@@ -134,6 +150,128 @@
             });
         }
 
+        // Обработчик смены пароля
+        function initChangePassword() {
+            document.getElementById('changePasswordBtn')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.location.href = '/password_change/';
+            });
+        }
+        
+        // Инициализация popup для изменения аватара
+        function initAvatarPopup() {
+            const changeAvatarBtn = document.getElementById('changeAvatarBtn');
+            const avatarPopup = document.getElementById('avatarPopup');
+            const cancelAvatarBtn = document.getElementById('cancelAvatarBtn');
+            const deleteAvatarBtn = document.getElementById('deleteAvatarBtn');
+            const avatarUpload = document.getElementById('avatarUpload');
+            const avatarPreview = document.getElementById('avatarPreview');
+            
+            if (!changeAvatarBtn || !avatarPopup) return;
+            
+            // Открытие popup
+            changeAvatarBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                document.getElementById('profileDropdown').classList.remove('show');
+                
+                // Загружаем текущие данные пользователя
+                const userData = await loadUserData();
+                if (userData) {
+                    updateAvatarPreview(userData);
+                }
+                
+                avatarPopup.classList.add('show');
+            });
+            
+            // Закрытие popup
+            cancelAvatarBtn.addEventListener('click', () => {
+                avatarPopup.classList.remove('show');
+            });
+            
+            // Обработчик удаления аватара
+            deleteAvatarBtn.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('/api/users/me/avatar/', {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const userData = await loadUserData();
+                        updateUserProfile(userData);
+                        updateAvatarPreview(userData);
+                    } else {
+                        console.error('Ошибка при удалении аватара');
+                    }
+                } catch (error) {
+                    console.error('Ошибка:', error);
+                }
+            });
+            
+            // Обработчик загрузки нового аватара
+            avatarUpload.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                try {
+                    const formData = new FormData();
+                    formData.append('avatar', file);
+                    
+                    const response = await fetch('/api/users/me/avatar/', {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                        },
+                        body: formData
+                    });
+                    
+                    if (response.ok) {
+                        const userData = await loadUserData();
+                        updateUserProfile(userData);
+                        updateAvatarPreview(userData);
+                    } else {
+                        console.error('Ошибка при загрузке аватара');
+                    }
+                } catch (error) {
+                    console.error('Ошибка:', error);
+                }
+            });
+            
+            // Обновление preview в popup
+            function updateAvatarPreview(userData) {
+                avatarPreview.innerHTML = '';
+                
+                if (userData?.avatar) {
+                    const img = document.createElement('img');
+                    img.src = userData.avatar;
+                    img.alt = 'Аватар';
+                    img.onerror = () => {
+                        showInitials(userData);
+                    };
+                    avatarPreview.appendChild(img);
+                } else {
+                    showInitials(userData);
+                }
+            }
+            
+            function showInitials(userData) {
+                if (userData?.first_name && userData?.last_name) {
+                    avatarPreview.textContent = userData.first_name[0] + userData.last_name[0];
+                } else {
+                    avatarPreview.textContent = '??';
+                }
+            }
+            
+            // Закрытие popup при клике вне его
+            avatarPopup.addEventListener('click', (e) => {
+                if (e.target === avatarPopup) {
+                    avatarPopup.classList.remove('show');
+                }
+            });
+        }
+
         // Основной поток выполнения
         try {
             initDropdownMenu();
@@ -142,10 +280,11 @@
             if (userData) {
                 updateUserProfile(userData);
                 localStorage.setItem('user_profile', JSON.stringify(userData));
-                initDropdownMenu();
             }
             
             initLogout();
+            initChangePassword();
+            initAvatarPopup();
         } catch {
             document.getElementById('userName').textContent = 'Пользователь';
         }

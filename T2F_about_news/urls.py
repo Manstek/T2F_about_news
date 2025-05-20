@@ -8,7 +8,9 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 
-from apps.users.views import SignUpView, LoginView, MainView
+from apps.users.views import (
+    SignUpView, LoginView, MainView, PasswordResetView,
+    TagListView, PostListView, NewsListView)
 
 
 schema_view = get_schema_view(
@@ -26,24 +28,39 @@ schema_view = get_schema_view(
 
 
 urlpatterns = [
-    path('api/', include('apps.users.urls')),
-    path('api/', include('apps.blog.urls')),
+     path('api/', include('apps.users.urls')),
+     path('api/', include('apps.blog.urls')),
 
-    path('admin/', admin.site.urls),
+     path('admin/', admin.site.urls),
 
-    re_path(r'^swagger(?P<format>\.json|\.yaml)$',
-            schema_view.without_ui(cache_timeout=0),
-            name='schema-json'),
-    path('swagger/',
-         schema_view.with_ui('swagger', cache_timeout=0),
-         name='schema-swagger-ui'),
-    path('redoc/',
-         schema_view.with_ui('redoc', cache_timeout=0),
-         name='schema-redoc'),
+     re_path(r'^swagger(?P<format>\.json|\.yaml)$',
+             schema_view.without_ui(cache_timeout=0),
+             name='schema-json'),
+     path('swagger/',
+          schema_view.with_ui('swagger', cache_timeout=0),
+          name='schema-swagger-ui'),
+     path('redoc/',
+          schema_view.with_ui('redoc', cache_timeout=0),
+          name='schema-redoc'),
 
-    path('auth/signup/', SignUpView.as_view(), name='signup'),
-    path('auth/signin/', LoginView.as_view(), name='signin'),
-    path('', MainView.as_view(), name='main'),
+     path('auth/signup/', SignUpView.as_view(), name='signup'),
+     path('auth/signin/', LoginView.as_view(), name='signin'),
+
+     path('', MainView.as_view(), name='main'),
+
+     path('password_change/',
+          PasswordResetView.as_view(),
+          name='change_password'),
+
+     path('tags/',
+          TagListView.as_view(),
+          name='tag_list'),
+     path('posts/',
+          PostListView.as_view(),
+          name='posts'),
+     path('news/',
+          NewsListView.as_view(),
+          name='news'),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

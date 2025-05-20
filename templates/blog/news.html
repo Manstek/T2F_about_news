@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/news.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="news-container">
+    <h1>Новости</h1>
+    
+    <div class="news-list" id="newsList">
+        <div class="loading">Загрузка новостей...</div>
+    </div>
+    
+    <div class="pagination" id="pagination">
+        <!-- Пагинация будет добавлена через JavaScript -->
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+    const newsList = document.getElementById('newsList');
+    const pagination = document.getElementById('pagination');
+    let currentPage = 1;
+    const newsPerPage = 5; // Должно совпадать с limit на бэкенде
+    
+    // Проверка авторизации
+    if (!localStorage.getItem('access_token')) {
+        window.location.href = '/auth/signin/';
+        return;
+    }
+    
+    // Загрузка новостей
+    async function loadNews(page = 1) {
+        try {
+            const offset = (page - 1) * newsPerPage;
+            const response = await fetch(`/api/news/?limit=${newsPerPage}&offset=${offset}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                }
+            });
+            
+            if (!response.ok) throw new Error('Ошибка загрузки новостей');
+            return await response.json();
+        } catch (error) {
+            console.error('Ошибка:', error);
+            newsList.innerHTML = '<div class="error">Не удалось загрузить новости</div>';
+            return null;
+        }
+    }
+    
+    // Отображение новостей
+    function renderNews(data) {
+        if (!data || !data.results || data.results.length === 0) {
+            newsList.innerHTML = '<div class="empty">Новости не найдены</div>';
+            return;
+        }
+        
+        newsList.innerHTML = '';
+        
+        data.results.forEach(news => {
+            const newsElement = document.createElement('div');
+            newsElement.className = 'news-card';
+            
+            // Форматирование даты
+            const pubDate = new Date(news.pub_date);
+            const formattedDate = pubDate.toLocaleDateString('ru-RU', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            newsElement.innerHTML = `
+                <div class="news-header">
+                    <span class="news-tag">${news.tag}</span>
+                    <span class="news-date">${formattedDate}</span>
+                </div>
+                <div class="news-content">
+                    <h3>${news.title}</h3>
+                    <p class="news-source">Источник: ${news.source}</p>
+                    <p class="news-description">${news.description}</p>
+                    ${news.image_url ? `<img src="${news.image_url}" class="news-image" alt="Изображение новости">` : ''}
+                    <a href="${news.news_url}" target="_blank" class="news-link">Читать полностью</a>
+                </div>
+            `;
+            
+            newsList.appendChild(newsElement);
+        });
+    }
+    
+    // Отображение пагинации
+    function renderPagination(data) {
+        if (!data || (!data.next && !data.previous)) {
+            pagination.innerHTML = '';
+            return;
+        }
+        
+        pagination.innerHTML = '';
+        
+        // Кнопка "Назад"
+        if (data.previous) {
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'pagination-btn';
+            prevBtn.innerHTML = '&larr; Назад';
+            prevBtn.addEventListener('click', () => {
+                currentPage--;
+                loadAndRenderNews();
+            });
+            pagination.appendChild(prevBtn);
+        }
+        
+        // Номера страниц
+        const totalPages = Math.ceil(data.count / newsPerPage);
+        const maxVisiblePages = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+        
+        if (endPage - startPage + 1 < maxVisiblePages) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+        
+        for (let i = startPage; i <= endPage; i++) {
+            const pageBtn = document.createElement('button');
+            pageBtn.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
+            pageBtn.textContent = i;
+            pageBtn.addEventListener('click', () => {
+                currentPage = i;
+                loadAndRenderNews();
+            });
+            pagination.appendChild(pageBtn);
+        }
+        
+        // Кнопка "Вперед"
+        if (data.next) {
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'pagination-btn';
+            nextBtn.innerHTML = 'Вперед &rarr;';
+            nextBtn.addEventListener('click', () => {
+                currentPage++;
+                loadAndRenderNews();
+            });
+            pagination.appendChild(nextBtn);
+        }
+    }
+    
+    // Загрузка и отображение новостей
+    async function loadAndRenderNews() {
+        console.log('Loading news page:', currentPage); // Для отладки
+        newsList.innerHTML = '<div class="loading">Загрузка новостей...</div>';
+        
+        const data = await loadNews(currentPage);
+        console.log('Received news data:', data); // Для отладки
+        if (data) {
+            renderNews(data);
+            renderPagination(data);
+        }
+    }
+    
+    // Инициализация
+    loadAndRenderNews();
+});
+</script>
+
+<style>
+.news-container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 20px;
+}
+
+.news-list {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+.news-card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.news-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.news-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.news-tag {
+    background-color: #f0f0f0;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #555;
+}
+
+.news-date {
+    color: #666;
+    font-size: 14px;
+}
+
+.news-content h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #222;
+    font-size: 20px;
+}
+
+.news-source {
+    color: #888;
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+.news-description {
+    margin-bottom: 15px;
+    color: #444;
+    line-height: 1.5;
+}
+
+.news-image {
+    max-width: 100%;
+    border-radius: 6px;
+    margin-top: 15px;
+    margin-bottom: 15px;
+}
+
+.news-link {
+    display: inline-block;
+    color: #4285f4;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.news-link:hover {
+    text-decoration: underline;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 30px;
+    flex-wrap: wrap;
+}
+
+.pagination-btn {
+    padding: 8px 14px;
+    background-color: #f0f0f0;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #333;
+}
+
+.pagination-btn:hover {
+    background-color: #e0e0e0;
+}
+
+.pagination-btn.active {
+    background-color: #4285f4;
+    color: white;
+}
+
+.loading, .error, .empty {
+    text-align: center;
+    padding: 30px;
+    color: #666;
+}
+
+.error {
+    color: #dc3545;
+}
+</style>
+{% endblock %}

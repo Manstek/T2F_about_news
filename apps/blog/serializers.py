@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.users.serializers import Base64ImageField
+from apps.users.serializers import Base64ImageField, UserSerializer
 
 from apps.blog.models import Post, Comment, News
 
@@ -10,12 +10,22 @@ from apps.users.models import Tag
 class PostSerializer(serializers.ModelSerializer):
     """Сериализатор для постов."""
 
-    author = serializers.StringRelatedField(read_only=True)
     image = Base64ImageField(required=False)
+    author = UserSerializer()
 
     class Meta:
         model = Post
         fields = ('id', 'title', 'author', 'text', 'pub_date', 'image')
+
+
+class PostCreateSerializer(PostSerializer):
+    """Сериализатор для создания постов."""
+
+    author = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    class Meta:
+        model = Post
+        fields = ('title', 'author', 'text', 'image')
 
 
 class TagSerializer(serializers.ModelSerializer):

@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/posts.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="posts-container">
+    <h1>Посты</h1>
+    
+    <div class="posts-list" id="postsList">
+        <div class="loading">Загрузка постов...</div>
+    </div>
+    
+    <div class="pagination" id="pagination">
+
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+    const postsList = document.getElementById('postsList');
+    const pagination = document.getElementById('pagination');
+    let currentPage = 1;
+    const postsPerPage = 5;
+
+    // Проверка авторизации
+    if (!localStorage.getItem('access_token')) {
+        window.location.href = '/auth/signin/';
+        return;
+    }
+    
+    // Загрузка постов
+    async function loadPosts(page = 1) {
+        try {
+            const offset = (page - 1) * postsPerPage;
+            const response = await fetch(`/api/posts/?limit=${postsPerPage}&offset=${offset}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                }
+            });
+            
+            if (!response.ok) throw new Error('Ошибка загрузки постов');
+            return await response.json();
+        } catch (error) {
+            console.error('Ошибка:', error);
+            postsList.innerHTML = '<div class="error">Не удалось загрузить посты</div>';
+            return null;
+        }
+    }
+    
+    // Отображение постов
+    function renderPosts(data) {
+        if (!data || !data.results || data.results.length === 0) {
+            postsList.innerHTML = '<div class="empty">Посты не найдены</div>';
+            return;
+        }
+        
+        postsList.innerHTML = '';
+        
+        data.results.forEach(post => {
+            const postElement = document.createElement('div');
+            postElement.className = 'post-card';
+            
+            // Форматирование даты
+            const pubDate = new Date(post.pub_date);
+            const formattedDate = pubDate.toLocaleDateString('ru-RU', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            postElement.innerHTML = `
+                <div class="post-header">
+                    <div class="post-avatar">
+                        ${post.author.avatar ? 
+                            `<img src="${post.author.avatar}" alt="Аватар">` : 
+                            `<span>${post.author.first_name?.[0] || ''}${post.author.last_name?.[0] || ''}</span>`
+                        }
+                    </div>
+                    <div class="post-author-info">
+                        <span class="post-author-name">
+                            ${post.author.first_name || ''} ${post.author.last_name || ''}
+                        </span>
+                        <span class="post-date">${formattedDate}</span>
+                    </div>
+                </div>
+                <div class="post-content">
+                    <h3>${post.title}</h3>
+                    <p>${post.text}</p>
+                    ${post.image ? `<img src="${post.image}" class="post-image" alt="Изображение поста">` : ''}
+                </div>
+            `;
+            
+            postsList.appendChild(postElement);
+        });
+    }
+    
+    // Отображение пагинации
+    function renderPagination(data) {
+        if (!data || (!data.next && !data.previous)) {
+            pagination.innerHTML = '';
+            return;
+        }
+        
+        pagination.innerHTML = '';
+        
+        // Кнопка "Назад"
+        if (data.previous) {
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'pagination-btn';
+            prevBtn.innerHTML = '&larr; Назад';
+            prevBtn.addEventListener('click', () => {
+                currentPage--;
+                loadAndRenderPosts();
+            });
+            pagination.appendChild(prevBtn);
+        }
+        
+        // Номера страниц
+        const totalPages = Math.ceil(data.count / postsPerPage);
+        const maxVisiblePages = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+        
+        if (endPage - startPage + 1 < maxVisiblePages) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+        
+        for (let i = startPage; i <= endPage; i++) {
+            const pageBtn = document.createElement('button');
+            pageBtn.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
+            pageBtn.textContent = i;
+            pageBtn.addEventListener('click', () => {
+                currentPage = i;
+                loadAndRenderPosts();
+            });
+            pagination.appendChild(pageBtn);
+        }
+        
+        // Кнопка "Вперед"
+        if (data.next) {
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'pagination-btn';
+            nextBtn.innerHTML = 'Вперед &rarr;';
+            nextBtn.addEventListener('click', () => {
+                currentPage++;
+                loadAndRenderPosts();
+            });
+            pagination.appendChild(nextBtn);
+        }
+    }
+    
+    // Загрузка и отображение постов
+    async function loadAndRenderPosts() {
+        console.log('Loading page:', currentPage); // Для отладки
+        postsList.innerHTML = '<div class="loading">Загрузка постов...</div>';
+        
+        const data = await loadPosts(currentPage);
+        console.log('Received data:', data); // Для отладки
+        if (data) {
+            renderPosts(data);
+            renderPagination(data);
+        }
+    }
+    
+    // Инициализация
+    loadAndRenderPosts();
+});
+</script>
+{% endblock %}

@@ -54,12 +54,17 @@ class CustomUserViewSet(viewsets.ModelViewSet):
             permission_classes=[permissions.IsAuthenticated],
             serializer_class=SelectTagSerializer)
     def select_tag(self, request, pk=None):
-        serializer = SelectTagSerializer(data=request.data,
-                                         context={'request': request})
+        user = request.user
+        serializer = SelectTagSerializer(
+            data=request.data, context={'request': request})
         if serializer.is_valid(raise_exception=True):
-            serializer.save()
+            new_tags = serializer.validated_data['tag']
+
+            user.tags.clear()
+            user.tags.add(*new_tags)
+
             return Response(status=status.HTTP_200_OK)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class AvatarMeUserViewSet(viewsets.GenericViewSet,
@@ -86,6 +91,7 @@ class AvatarMeUserViewSet(viewsets.GenericViewSet,
             user.avatar = serializer.validated_data['avatar']
             user.save()
             return Response(status=status.HTTP_200_OK)
+        return Response(serializer.errors)
 
 
 class SignUpView(View):
@@ -100,4 +106,24 @@ class LoginView(View):
 
 class MainView(View):
     def get(self, request):
-        return render(request, 'base.html')
+        return render(request, 'index.html')
+
+
+class PasswordResetView(View):
+    def get(self, request):
+        return render(request, 'users/password_change.html')
+
+
+class TagListView(View):
+    def get(self, request):
+        return render(request, 'users/tag_list.html')
+
+
+class PostListView(View):
+    def get(self, request):
+        return render(request, 'blog/posts.html')
+
+
+class NewsListView(View):
+    def get(self, request):
+        return render(request, 'blog/news.html')

@@ -1,52 +1,10 @@
+{% extends "base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Главная страница</title>
-    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+{% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/news.css' %}">
     <link rel="stylesheet" href="{% static 'css/post.css' %}">
-    <link rel="stylesheet" href="{% static 'css/toast.css' %}">
-    <link rel="stylesheet" href="{% static 'css/load.css' %}">
-    <link rel="stylesheet" href="{% static 'css/header.css' %}">
-    <link rel="stylesheet" href="{% static 'css/footer.css' %}">
-    <style>
-        /* Добавляем стили для круглого превью */
-        .image-preview {
-            display: none;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            overflow: hidden;
-            margin: 10px auto;
-            border: 2px solid #ddd;
-            background-color: #f5f5f5;
-        }
-        
-        .image-preview img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .file-upload-label {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            cursor: pointer;
-        }
-        
-        .file-upload-input {
-            display: none;
-        }
-    </style>
-</head>
-<body>
-    <!-- Хедер -->
-    {% include "includes/header.html" %}
-
+{% endblock %}
+{% block content %}
     <!-- Основное содержимое -->
     <main>
         <h1 class="page-title">Главная страница</h1>
@@ -92,9 +50,9 @@
             </div>
         </div>
     </main>
+{% endblock content %}
 
-    {% include "includes/footer.html" %}
-
+{% block extra_js %}
     <script>
         /**
          * Основные функции для работы с постами и новостями
@@ -153,7 +111,8 @@
                 const postsList = document.getElementById('posts-list');
                 showLoadingState(postsList);
                 
-                const posts = await fetchPosts();
+                const postsData = await fetchPosts();
+                const posts = postsData.results || [];
                 
                 if (posts.length === 0) {
                     showEmptyState(postsList);
@@ -185,21 +144,37 @@
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             
-            const data = await response.json();
-            return data.results || [];
+            return await response.json();
         }
 
         /**
-        * Создание элемента поста
+        * Создание элемента поста с круглым аватаром
         */
         function createPostElement(post) {
             const element = document.createElement('div');
             element.className = 'post-card';
+            
+            // Получаем данные автора
+            const authorName = post.author?.first_name && post.author?.last_name 
+                ? `${post.author.first_name} ${post.author.last_name}`
+                : post.author?.username || 'Неизвестный автор';
+                
+            const authorAvatar = post.author?.avatar || '';
+            const authorInitials = getInitials(authorName);
+            
             element.innerHTML = `
                 <div class="post-header" onclick="window.location.href='/posts/${post.id}/'">
-                    <div class="post-avatar">${getInitials(post.author)}</div>
+                    <div class="post-avatar">
+                        ${authorAvatar 
+                            ? `<img src="${escapeUrl(authorAvatar)}" alt="Аватар" style="
+                                width: 100%;
+                                height: 100%;
+                                object-fit: cover;
+                            " onerror="this.parentNode.textContent='${authorInitials}'">`
+                            : authorInitials}
+                    </div>
                     <div>
-                        <div class="post-author">${escapeHtml(post.author)}</div>
+                        <div class="post-author">${escapeHtml(authorName)}</div>
                         <div class="post-date">${formatDate(post.pub_date)}</div>
                     </div>
                 </div>
@@ -281,32 +256,6 @@
          * Настройка обработчиков событий
          */
         function setupEventListeners() {
-            // Меню профиля
-            const profileBtn = document.getElementById('profileBtn');
-            if (profileBtn) {
-                profileBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    document.getElementById('profileDropdown').classList.toggle('show');
-                });
-            }
-            
-            // Закрытие меню при клике вне его
-            document.addEventListener('click', () => {
-                const dropdown = document.getElementById('profileDropdown');
-                if (dropdown) dropdown.classList.remove('show');
-            });
-            
-            // Выход из системы
-            const logoutBtn = document.getElementById('logoutBtn');
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    localStorage.removeItem('access_token');
-                    localStorage.removeItem('refresh_token');
-                    window.location.href = '/auth/signin/';
-                });
-            }
-            
             // Создание нового поста
             const postForm = document.getElementById('new-post-form');
             if (postForm) {
@@ -383,13 +332,30 @@
             submitBtn.textContent = 'Публикация...';
             
             try {
+                // Получаем данные текущего пользователя
+                const userResponse = await fetch('/api/users/me/', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    }
+                });
+                
+                if (!userResponse.ok) {
+                    throw new Error('Не удалось получить данные пользователя');
+                }
+                
+                const userData = await userResponse.json();
+                
+                // Подготавливаем данные для отправки
                 const formData = new FormData();
                 formData.append('title', title);
                 formData.append('text', content);
+                formData.append('author', userData.id);  // Добавляем ID автора
+                
                 if (imageFile) {
                     formData.append('image', imageFile);
                 }
                 
+                // Отправляем запрос
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: {
@@ -398,23 +364,23 @@
                     body: formData
                 });
                 
-                if (response.ok) {
-                    // Очищаем форму
-                    titleInput.value = '';
-                    textarea.value = '';
-                    fileInput.value = '';
-                    document.getElementById('image-preview').innerHTML = '';
-                    document.getElementById('image-preview').style.display = 'none';
-                    
-                    // Обновляем список постов
-                    await renderPosts();
-                    
-                    // Показываем уведомление об успехе
-                    showToast('Пост успешно опубликован!');
-                } else {
+                if (!response.ok) {
                     const errorData = await response.json();
-                    throw new Error(errorData.message || 'Ошибка при создании поста');
+                    throw new Error(errorData.message || JSON.stringify(errorData));
                 }
+                
+                // Очищаем форму
+                titleInput.value = '';
+                textarea.value = '';
+                fileInput.value = '';
+                document.getElementById('image-preview').innerHTML = '';
+                document.getElementById('image-preview').style.display = 'none';
+                
+                // Обновляем список постов
+                await renderPosts();
+                
+                // Показываем уведомление об успехе
+                showToast('Пост успешно опубликован!');
             } catch (error) {
                 console.error('Ошибка:', error);
                 showToast(error.message || 'Не удалось опубликовать пост', 'error');
@@ -497,5 +463,4 @@
             return encodeURI(unsafe?.toString() || '');
         }
     </script>
-</body>
-</html>
+{% endblock extra_js %}
