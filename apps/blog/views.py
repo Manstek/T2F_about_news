@@ -86,7 +86,7 @@ class NewsViewSet(viewsets.ModelViewSet):
 
         short_news = ShortNews.objects.filter(
             news__tag__in=user_tags).select_related(
-                'news', 'news__tag').distinct()
+                'news', 'news__tag').order_by('-news__pub_date').distinct()
 
         serializer = ShortNewsListSerializer(short_news, many=True)
         return Response(serializer.data)
@@ -94,6 +94,7 @@ class NewsViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='short')
     def short_news(self, request):
         """Возвращает список сжатых новостей с основными данными из News."""
-        short_news = ShortNews.objects.select_related('news').all()
+        short_news = ShortNews.objects.select_related(
+            'news').order_by('-news__pub_date').all()
         serializer = ShortNewsListSerializer(short_news, many=True)
         return Response(serializer.data)
