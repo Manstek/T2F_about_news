@@ -5,7 +5,7 @@ from rest_framework import viewsets, permissions, mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from apps.blog.models import Post, News, ShortNews
+from apps.blog.models import Post, ShortNews
 
 from apps.users.models import Tag
 

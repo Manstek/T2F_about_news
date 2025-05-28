@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404
 from celery import shared_task
 
 from apps.blog.compress_news_utils import (
-    fetch_article_text, fetch_news_from_api)
+    fetch_article_text, fetch_news_from_api, chat)
 from apps.blog.models import Tag, News, ShortNews
 
 AMOUNT_NEWS = 2
@@ -53,10 +53,12 @@ def compress_news(news_ids):
     for news_id in news_ids:
         news = get_object_or_404(News, id=news_id)
         news_text = fetch_article_text(news.news_url)
+        text = chat(news_text)
+        print(text)
         short_news.append(
             ShortNews(
                 news=news,
-                text=news_text
+                text=text
             )
         )
     ShortNews.objects.bulk_create(short_news)

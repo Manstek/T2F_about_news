@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block extra_css %}
+{% comment %} {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/news_detail.css' %}">
-{% endblock %}
+{% endblock %} {% endcomment %}
 
 {% block content %}
 <div class="news-detail-container" id="newsDetailContainer">
@@ -42,6 +42,19 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
+    // Форматирование текста (обрезание длинных строк)
+    function formatText(text, maxLength = 300) {
+        if (!text) return 'Нет содержимого';
+        return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+    }
+    
+    // Создание заголовка из текста
+    function createTitle(text, tag) {
+        if (tag) return tag.charAt(0).toUpperCase() + tag.slice(1);
+        if (!text) return 'Новость';
+        return text.split(' ').slice(0, 8).join(' ') + (text.split(' ').length > 8 ? '...' : '');
+    }
+    
     // Отображение новости
     function renderNewsDetail(news) {
         if (!news) {
@@ -59,25 +72,32 @@ document.addEventListener('DOMContentLoaded', async function() {
             minute: '2-digit'
         });
         
+        // Подготовка данных
+        const title = createTitle(news.text, news.tag);
+        const source = news.source || 'Не указан';
+        const image = news.image_url ? `<img src="${news.image_url}" class="news-image" alt="Изображение новости">` : '';
+        const originalLink = news.news_url ? 
+            `<a href="${news.news_url}" target="_blank" class="news-original-link">Читать в оригинале</a>` : '';
+        
         container.innerHTML = `
             <div class="news-detail-card">
                 <div class="news-header">
-                    <span class="news-tag">${news.tag}</span>
+                    <span class="news-tag">${news.tag || 'Без категории'}</span>
                     <span class="news-date">${formattedDate}</span>
                 </div>
                 
-                <h1 class="news-title">${news.title}</h1>
+                <h1 class="news-title">${title}</h1>
                 
-                <p class="news-source">Источник: ${news.source}</p>
+                <p class="news-source">Источник: ${source}</p>
                 
-                ${news.image_url ? `<img src="${news.image_url}" class="news-image" alt="Изображение новости">` : ''}
+                ${image}
                 
                 <div class="news-content">
-                    <p>${news.description}</p>
+                    <p>${formatText(news.text)}</p>
                 </div>
                 
                 <div class="news-footer">
-                    <a href="${news.news_url}" target="_blank" class="news-original-link">Читать в оригинале</a>
+                    ${originalLink}
                     <a href="/news/" class="back-to-list">← Вернуться к списку новостей</a>
                 </div>
             </div>

@@ -6,10 +6,11 @@ import requests
 from requests.exceptions import RequestException
 
 
-API_KEY_DEEPSEAK = os.getenv('API_KEY_DEEPSEAK', 'DEFAULT_KEY')
+API_KEY_DEEPSEEK = os.getenv('API_KEY_DEEPSEAK', 'DEFAULT_KEY')
 MODEL = os.getenv('MODEL', 'DEFAULT_KEY')
 API_URL = os.getenv('API_URL', 'DEFAULT_KEY')
 AMOUNT_NEWS = 2
+
 SYSTEM_CONTENT = (
     'Ты — инструмент для сжатия текста.'
     'Твоя задача — сокращать текст так, '
@@ -39,15 +40,10 @@ def fetch_article_text(url):
             f"Не удалось обработать статью по URL {url}: {str(e)}")
 
 
-def process_content(content):
-    """Удаляет теги <think> и </think> из текста."""
-    return content.replace('<think>', '').replace('</think>', '')
-
-
 def chat(prompt):
     """Отправляет запрос к модели и возвращает ответ."""
     headers = {
-        "Authorization": f"Bearer {API_KEY_DEEPSEAK}",
+        "Authorization": f"Bearer {API_KEY_DEEPSEEK}",
         "Content-Type": "application/json"
     }
 
@@ -76,15 +72,13 @@ def chat(prompt):
         response.raise_for_status()
     except RequestException as e:
         raise Exception(f"Ошибка при запросе к API: {str(e)}")
-
     try:
         response_data = response.json()
         if "choices" not in response_data:
             raise Exception(
                 "Некорректный формат ответа API: отсутствует ключ 'choices'")
 
-        content = response_data["choices"][0]["message"].get("content", "")
-        return process_content(content)
+        return response_data['choices'][0]['message'].get("content", "")
     except (json.JSONDecodeError, KeyError, IndexError) as e:
         raise Exception(f"Ошибка при обработке ответа API: {str(e)}")
 
