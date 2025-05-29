@@ -32,6 +32,13 @@ document.addEventListener('DOMContentLoaded', async function () {
     const pathParts = window.location.pathname.split('/');
     const postId = pathParts[pathParts.length - 2];
 
+    function isEditable(pubDate) {
+        const postDate = new Date(pubDate);
+        const now = new Date();
+        const diffInHours = (now - postDate) / (1000 * 60 * 60);
+        return diffInHours < 1;
+    }
+
     function isCommentEditable(pubDate) {
         const commentDate = new Date(pubDate);
         const now = new Date();
@@ -51,6 +58,53 @@ document.addEventListener('DOMContentLoaded', async function () {
         } catch (error) {
             console.error('Ошибка:', error);
             container.innerHTML = '<div class="error">Не удалось загрузить пост</div>';
+            return null;
+        }
+    }
+
+    async function deletePost() {
+        if (!confirm('Вы уверены, что хотите удалить этот пост?')) return false;
+        try {
+            const response = await fetch(`/api/posts/${postId}/`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                }
+            });
+            if (!response.ok) throw new Error('Ошибка удаления поста');
+            window.location.href = '/posts/';
+            return true;
+        } catch (error) {
+            console.error('Ошибка:', error);
+            alert('Не удалось удалить пост');
+            return false;
+        }
+    }
+
+    async function editPost(newTitle, newText, imageAction) {
+        try {
+            const formData = new FormData();
+            formData.append('title', newTitle);
+            formData.append('text', newText);
+            
+            if (imageAction === 'remove') {
+                formData.append('image', '');
+            } else if (imageAction === 'change' && document.getElementById('postImageInput').files[0]) {
+                formData.append('image', document.getElementById('postImageInput').files[0]);
+            }
+
+            const response = await fetch(`/api/posts/${postId}/`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                },
+                body: formData
+            });
+            if (!response.ok) throw new Error('Ошибка редактирования поста');
+            return await response.json();
+        } catch (error) {
+            console.error('Ошибка:', error);
+            alert('Не удалось отредактировать пост');
             return null;
         }
     }
@@ -150,6 +204,8 @@ document.addEventListener('DOMContentLoaded', async function () {
         const formattedDate = formatDate(post.pub_date);
         const image = post.image ? `<img src="${post.image}" class="post-image" alt="Изображение поста">` : '';
         const authorInitials = generateAvatarInitials(post.author.first_name, post.author.last_name);
+        const isCurrentUserPost = currentUser?.username === post.author.username;
+        const postIsEditable = isCurrentUserPost && isEditable(post.pub_date);
 
         container.innerHTML = `
             <div class="post-detail-card">
@@ -163,7 +219,21 @@ document.addEventListener('DOMContentLoaded', async function () {
                             <div class="author-username">@${post.author.username}</div>
                         </div>
                     </div>
-                    <span class="post-date">${formattedDate}</span>
+                    <div class="post-header-right">
+                        <span class="post-date">${formattedDate}</span>
+                        ${isCurrentUserPost ? `
+                            <div class="post-actions">
+                                ${postIsEditable ? `
+                                    <button class="edit-post-btn">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                ` : ''}
+                                <button class="delete-post-btn">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
                 </div>
                 <h1 class="post-title">${post.title}</h1>
                 ${image}
@@ -184,6 +254,130 @@ document.addEventListener('DOMContentLoaded', async function () {
                 </div>
             </div>
         `;
+
+        if (isCurrentUserPost) {
+            document.querySelector('.delete-post-btn').addEventListener('click', deletePost);
+            
+            if (postIsEditable) {
+                document.querySelector('.edit-post-btn').addEventListener('click', function() {
+                    const postTitle = document.querySelector('.post-title');
+                    const postContent = document.querySelector('.post-content p');
+                    const postImageContainer = document.querySelector('.post-image')?.parentNode;
+                    const originalTitle = postTitle.textContent;
+                    const originalContent = postContent.textContent;
+                    const hasImage = !!postImageContainer;
+
+                    // Создаем элементы формы редактирования
+                    const editForm = document.createElement('div');
+                    editForm.className = 'edit-post-form';
+                    
+                    // Поле заголовка
+                    const titleInput = document.createElement('input');
+                    titleInput.type = 'text';
+                    titleInput.value = originalTitle;
+                    titleInput.className = 'edit-post-input';
+                    
+                    // Поле текста
+                    const contentTextarea = document.createElement('textarea');
+                    contentTextarea.value = originalContent;
+                    contentTextarea.className = 'edit-post-textarea';
+                    
+                    // Управление изображением
+                    const imageControls = document.createElement('div');
+                    imageControls.className = 'image-controls';
+                    
+                    if (hasImage) {
+                        imageControls.innerHTML = `
+                            <label class="image-control-btn">
+                                <input type="file" id="postImageInput" accept="image/*" style="display: none;">
+                                <i class="fas fa-sync-alt"></i> Заменить
+                            </label>
+                            <button type="button" class="image-control-btn remove-image-btn">
+                                <i class="fas fa-times"></i> Удалить
+                            </button>
+                        `;
+                    } else {
+                        imageControls.innerHTML = `
+                            <label class="image-control-btn">
+                                <input type="file" id="postImageInput" accept="image/*" style="display: none;">
+                                <i class="fas fa-plus"></i> Добавить
+                            </label>
+                        `;
+                    }
+                    
+                    // Кнопки сохранения/отмены
+                    const buttonsContainer = document.createElement('div');
+                    buttonsContainer.className = 'edit-form-buttons';
+                    
+                    const saveBtn = document.createElement('button');
+                    saveBtn.textContent = 'Сохранить';
+                    saveBtn.className = 'save-post-btn';
+                    
+                    const cancelBtn = document.createElement('button');
+                    cancelBtn.textContent = 'Отмена';
+                    cancelBtn.className = 'cancel-post-btn';
+                    
+                    buttonsContainer.appendChild(saveBtn);
+                    buttonsContainer.appendChild(cancelBtn);
+                    
+                    // Собираем форму
+                    editForm.appendChild(titleInput);
+                    editForm.appendChild(contentTextarea);
+                    if (hasImage || !hasImage) editForm.appendChild(imageControls);
+                    editForm.appendChild(buttonsContainer);
+                    
+                    // Заменяем содержимое поста на форму редактирования
+                    const postCard = document.querySelector('.post-detail-card');
+                    const postHeader = document.querySelector('.post-header');
+                    const commentsSection = document.querySelector('.comments-section');
+                    const postFooter = document.querySelector('.post-footer');
+                    
+                    postHeader.insertAdjacentElement('afterend', editForm);
+                    postTitle.style.display = 'none';
+                    postContent.style.display = 'none';
+                    if (postImageContainer) postImageContainer.style.display = 'none';
+                    
+                    // Обработчик сохранения
+                    let imageAction = 'keep'; // keep, remove, change
+                    
+                    saveBtn.addEventListener('click', async () => {
+                        const newTitle = titleInput.value.trim();
+                        const newText = contentTextarea.value.trim();
+                        
+                        if (!newTitle || !newText) {
+                            alert('Заголовок и текст не могут быть пустыми');
+                            return;
+                        }
+                        
+                        const updated = await editPost(newTitle, newText, imageAction);
+                        if (updated) {
+                            const post = await loadPostDetail();
+                            renderPostDetail(post);
+                        }
+                    });
+                    
+                    // Обработчик отмены
+                    cancelBtn.addEventListener('click', () => {
+                        editForm.remove();
+                        postTitle.style.display = 'block';
+                        postContent.style.display = 'block';
+                        if (postImageContainer) postImageContainer.style.display = 'block';
+                    });
+                    
+                    // Обработчики управления изображением
+                    if (hasImage) {
+                        document.querySelector('.remove-image-btn').addEventListener('click', () => {
+                            imageAction = 'remove';
+                            document.querySelector('.post-image').style.display = 'none';
+                        });
+                    }
+                    
+                    document.getElementById('postImageInput')?.addEventListener('change', () => {
+                        imageAction = 'change';
+                    });
+                });
+            }
+        }
 
         document.getElementById('submitComment').addEventListener('click', async function () {
             const text = document.getElementById('commentText').value.trim();
@@ -275,8 +469,8 @@ document.addEventListener('DOMContentLoaded', async function () {
             });
         });
 
-        // Пагинация — опционально, если есть
-        pagination.innerHTML = ''; // Можно добавить кнопки перехода
+        // Пагинация
+        pagination.innerHTML = '';
     }
 
     async function loadAndRenderComments(page = 1) {
@@ -288,7 +482,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     renderPostDetail(post);
 });
 </script>
-
 
 <style>
 .post-detail-container {
@@ -302,6 +495,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     padding: 30px;
+    position: relative;
 }
 
 .post-header {
@@ -309,6 +503,141 @@ document.addEventListener('DOMContentLoaded', async function () {
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 20px;
+}
+
+.post-header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.post-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.post-actions button {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background-color: #f5f5f5;
+    color: #555;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.post-actions button:hover {
+    background-color: #4285f4;
+    color: white;
+}
+
+.post-actions button i {
+    font-size: 14px;
+}
+
+.edit-post-form {
+    margin-bottom: 20px;
+}
+
+.edit-post-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    font-size: 24px;
+    font-weight: bold;
+    font-family: inherit;
+}
+
+.edit-post-textarea {
+    width: 100%;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    resize: vertical;
+    min-height: 200px;
+    margin-bottom: 15px;
+    font-family: inherit;
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+.image-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.image-control-btn {
+    padding: 8px 12px;
+    background-color: #f5f5f5;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.image-control-btn:hover {
+    background-color: #e0e0e0;
+}
+
+.image-control-btn i {
+    font-size: 12px;
+}
+
+.remove-image-btn {
+    background-color: #ffebee;
+    color: #c62828;
+}
+
+.remove-image-btn:hover {
+    background-color: #ffcdd2;
+}
+
+.edit-form-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.save-post-btn {
+    background-color: #4285f4;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.save-post-btn:hover {
+    background-color: #3367d6;
+}
+
+.cancel-post-btn {
+    background-color: #f5f5f5;
+    color: #555;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.cancel-post-btn:hover {
+    background-color: #e0e0e0;
 }
 
 .author-info, .comment-author {
@@ -458,29 +787,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     font-size: 14px;
 }
 
-.edit-comment-buttons {
-    display: flex;
-    gap: 10px;
-}
-
-.save-edit-btn, .cancel-edit-btn {
-    padding: 5px 10px;
-    border-radius: 4px;
-    font-size: 13px;
-    cursor: pointer;
-}
-
-.save-edit-btn {
-    background-color: #4285f4;
-    color: white;
-    border: none;
-}
-
-.cancel-edit-btn {
-    background: none;
-    border: 1px solid #ddd;
-}
-
 .empty-comments {
     color: #888;
     text-align: center;
@@ -518,33 +824,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     background-color: #3367d6;
 }
 
-.pagination-controls {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 15px;
-    margin: 20px 0;
-}
-
-.page-btn {
-    background: none;
-    border: 1px solid #ddd;
-    padding: 5px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.page-btn:hover {
-    border-color: #4285f4;
-    color: #4285f4;
-}
-
-.page-info {
-    color: #666;
-    font-size: 14px;
-}
-
 .post-footer {
     margin-top: 30px;
     padding-top: 20px;
@@ -574,6 +853,12 @@ document.addEventListener('DOMContentLoaded', async function () {
 
 .empty {
     color: #666;
+}
+
+/* Иконки Font Awesome */
+.fas {
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
 }
 </style>
 {% endblock %}
