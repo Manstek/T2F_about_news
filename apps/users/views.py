@@ -132,3 +132,8 @@ class NewsListView(View):
 class NewsDetailView(View):
     def get(self, request, pk):
         return render(request, 'blog/news_detail.html')
+
+
+class PostDetailView(View):
+    def get(self, request, pk):
+        return render(request, 'blog/post_detail.html')

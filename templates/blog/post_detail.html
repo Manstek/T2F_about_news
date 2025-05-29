@@ -11,9 +11,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     const container = document.getElementById('postDetailContainer');
     let currentUser = null;
 
-    console.log('Начинаем загрузку текущего пользователя...');
     if (!localStorage.getItem('access_token')) {
-        console.log('Токен не найден, перенаправление на страницу входа.');
         window.location.href = '/auth/signin/';
         return;
     } else {
@@ -25,9 +23,6 @@ document.addEventListener('DOMContentLoaded', async function () {
             });
             if (response.ok) {
                 currentUser = await response.json();
-                console.log('Текущий пользователь:', currentUser);
-            } else {
-                console.warn('Не удалось получить текущего пользователя, ответ не OK');
             }
         } catch (error) {
             console.error('Ошибка получения данных пользователя:', error);
@@ -36,13 +31,11 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     const pathParts = window.location.pathname.split('/');
     const postId = pathParts[pathParts.length - 2];
-    console.log('ID поста:', postId);
 
     function isCommentEditable(pubDate) {
         const commentDate = new Date(pubDate);
         const now = new Date();
         const diffInHours = (now - commentDate) / (1000 * 60 * 60);
-        console.log(`Проверка возможности редактирования комментария, время с публикации (ч): ${diffInHours}`);
         return diffInHours < 1;
     }
 
@@ -54,9 +47,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 }
             });
             if (!response.ok) throw new Error('Ошибка загрузки поста');
-            const postData = await response.json();
-            console.log('Данные поста загружены:', postData);
-            return postData;
+            return await response.json();
         } catch (error) {
             console.error('Ошибка:', error);
             container.innerHTML = '<div class="error">Не удалось загрузить пост</div>';
@@ -72,9 +63,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 }
             });
             if (!response.ok) throw new Error('Ошибка загрузки комментариев');
-            const commentsData = await response.json();
-            console.log(`Комментарии загружены (страница ${page}):`, commentsData.results);
-            return commentsData;
+            return await response.json();
         } catch (error) {
             console.error('Ошибка:', error);
             return { results: [], count: 0 };
@@ -92,9 +81,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 body: JSON.stringify({ text })
             });
             if (!response.ok) throw new Error('Ошибка отправки комментария');
-            const result = await response.json();
-            console.log('Комментарий отправлен:', result);
-            return result;
+            return await response.json();
         } catch (error) {
             console.error('Ошибка:', error);
             alert('Не удалось отправить комментарий');
@@ -112,7 +99,6 @@ document.addEventListener('DOMContentLoaded', async function () {
                 }
             });
             if (!response.ok) throw new Error('Ошибка удаления комментария');
-            console.log(`Комментарий с ID ${commentId} удалён`);
             return true;
         } catch (error) {
             console.error('Ошибка:', error);
@@ -132,9 +118,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 body: JSON.stringify({ text: newText })
             });
             if (!response.ok) throw new Error('Ошибка редактирования комментария');
-            const updatedComment = await response.json();
-            console.log(`Комментарий с ID ${commentId} отредактирован:`, updatedComment);
-            return updatedComment;
+            return await response.json();
         } catch (error) {
             console.error('Ошибка:', error);
             alert('Не удалось отредактировать комментарий');
@@ -204,7 +188,6 @@ document.addEventListener('DOMContentLoaded', async function () {
         document.getElementById('submitComment').addEventListener('click', async function () {
             const text = document.getElementById('commentText').value.trim();
             if (!text) return;
-            console.log('Отправка комментария:', text);
             const result = await postComment(text);
             if (result) {
                 document.getElementById('commentText').value = '';
@@ -225,14 +208,11 @@ document.addEventListener('DOMContentLoaded', async function () {
             return;
         }
 
-        console.log('Рендер комментариев. Текущий пользователь ID:', currentUser?.id);
         commentsList.innerHTML = commentsData.results.map(comment => {
-            const isCurrentUserComment = comment.author.id === currentUser?.id;
+            const isCurrentUserComment = currentUser?.username === comment.author.username;
             const formattedDate = formatDate(comment.pub_date);
             const authorInitials = generateAvatarInitials(comment.author.first_name, comment.author.last_name);
             const isEditable = isCurrentUserComment && isCommentEditable(comment.pub_date);
-
-            console.log(`Комментарий ID ${comment.id}, Автор ID: ${comment.author.id}, Текущий пользователь: ${currentUser?.id}, Можно редактировать: ${isEditable}`);
 
             return `
                 <div class="comment-item" data-comment-id="${comment.id}">
@@ -246,12 +226,12 @@ document.addEventListener('DOMContentLoaded', async function () {
                                 <div class="comment-author-username">@${comment.author.username}</div>
                             </div>
                         </div>
-                        <span class="comment-date">${formattedDate}</span>
+                        <div class="comment-date">${formattedDate}</div>
                     </div>
                     <div class="comment-text">${comment.text}</div>
-                    ${isEditable ? `
+                    ${isCurrentUserComment ? `
                         <div class="comment-actions">
-                            <button class="edit-comment-btn">Редактировать</button>
+                            ${isEditable ? `<button class="edit-comment-btn">Редактировать</button>` : ''}
                             <button class="delete-comment-btn">Удалить</button>
                         </div>
                     ` : ''}
@@ -259,77 +239,53 @@ document.addEventListener('DOMContentLoaded', async function () {
             `;
         }).join('');
 
-        // Добавляем обработчики кнопок редактирования и удаления
-        commentsList.querySelectorAll('.delete-comment-btn').forEach(button => {
-            button.addEventListener('click', async (e) => {
-                const commentEl = e.target.closest('.comment-item');
-                const commentId = commentEl.dataset.commentId;
-                console.log('Запрос на удаление комментария ID:', commentId);
+        document.querySelectorAll('.delete-comment-btn').forEach(btn => {
+            btn.addEventListener('click', async function () {
+                const commentItem = this.closest('.comment-item');
+                const commentId = commentItem.dataset.commentId;
                 const success = await deleteComment(commentId);
-                if (success) {
-                    loadAndRenderComments(page);
-                }
+                if (success) loadAndRenderComments(page);
             });
         });
 
-        commentsList.querySelectorAll('.edit-comment-btn').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const commentEl = e.target.closest('.comment-item');
-                const commentId = commentEl.dataset.commentId;
-                const commentTextEl = commentEl.querySelector('.comment-text');
-                const oldText = commentTextEl.textContent;
+        document.querySelectorAll('.edit-comment-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const commentItem = this.closest('.comment-item');
+                const commentId = commentItem.dataset.commentId;
+                const commentTextElement = commentItem.querySelector('.comment-text');
+                const originalText = commentTextElement.textContent;
 
-                // Проверяем, нет ли уже открытого редактора
-                if (commentEl.querySelector('textarea')) return;
+                const textarea = document.createElement('textarea');
+                textarea.value = originalText;
+                textarea.classList.add('edit-comment-textarea');
 
-                commentTextEl.innerHTML = `
-                    <textarea class="edit-comment-textarea">${oldText}</textarea>
-                    <button class="save-edit-btn">Сохранить</button>
-                    <button class="cancel-edit-btn">Отмена</button>
-                `;
+                const saveBtn = document.createElement('button');
+                saveBtn.textContent = 'Сохранить';
+                saveBtn.classList.add('save-comment-btn');
 
-                commentEl.querySelector('.save-edit-btn').addEventListener('click', async () => {
-                    const newText = commentEl.querySelector('.edit-comment-textarea').value.trim();
-                    if (!newText) {
-                        alert('Текст комментария не может быть пустым.');
-                        return;
-                    }
-                    console.log('Редактирование комментария ID:', commentId, 'Новый текст:', newText);
+                commentTextElement.replaceWith(textarea);
+                btn.replaceWith(saveBtn);
+
+                saveBtn.addEventListener('click', async () => {
+                    const newText = textarea.value.trim();
+                    if (!newText) return;
                     const updated = await editComment(commentId, newText);
-                    if (updated) {
-                        commentTextEl.textContent = updated.text;
-                    }
-                });
-
-                commentEl.querySelector('.cancel-edit-btn').addEventListener('click', () => {
-                    commentTextEl.textContent = oldText;
+                    if (updated) loadAndRenderComments(page);
                 });
             });
         });
 
-        // Пагинация
-        const totalPages = Math.ceil(commentsData.count / 5); // предполагается по 5 комментариев на страницу
-        pagination.innerHTML = '';
-        if (totalPages > 1) {
-            for (let i = 1; i <= totalPages; i++) {
-                const pageBtn = document.createElement('button');
-                pageBtn.textContent = i;
-                if (i === page) {
-                    pageBtn.disabled = true;
-                }
-                pageBtn.addEventListener('click', () => loadAndRenderComments(i));
-                pagination.appendChild(pageBtn);
-            }
-        }
+        // Пагинация — опционально, если есть
+        pagination.innerHTML = ''; // Можно добавить кнопки перехода
     }
 
     async function loadAndRenderComments(page = 1) {
-        const commentsData = await loadComments(page);
-        renderComments(commentsData, page);
+        const data = await loadComments(page);
+        renderComments(data, page);
     }
 
-    const postData = await loadPostDetail();
-    renderPostDetail(postData);
+    const post = await loadPostDetail();
+    renderPostDetail(post);
 });
 </script>
 

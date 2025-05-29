@@ -1,5 +1,5 @@
 from django.shortcuts import get_object_or_404
-from django.db.models import Prefetch
+from django.db.models import Count
 
 from rest_framework import viewsets, permissions, mixins
 from rest_framework.decorators import action
@@ -11,7 +11,7 @@ from apps.users.models import Tag
 
 from apps.blog.serializers import (
     PostSerializer, TagSerializer, CommentSerializer, ShortNewsListSerializer,
-    PostCreateSerializer)
+    PostCreateSerializer, CommentCreateSerializer)
 from apps.blog.permissions import IsAuthorOrAdmin, IsAdmin
 
 
@@ -31,6 +31,9 @@ class PostViewSet(viewsets.ModelViewSet):
         if self.action == 'create':
             return PostCreateSerializer
         return super().get_serializer_class()
+
+    def get_queryset(self):
+        return Post.objects.annotate(comments_count=Count('comments')).order_by('-pub_date')
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -52,6 +55,11 @@ class CommentViewSet(viewsets.ModelViewSet):
         if self.action in ('destroy', 'partial_update'):
             return (IsAuthorOrAdmin(),)
         return super().get_permissions()
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return CommentCreateSerializer
+        return super().get_serializer_class()
 
 
 class TagViewSet(viewsets.GenericViewSet,

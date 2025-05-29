@@ -12,10 +12,15 @@ class PostSerializer(serializers.ModelSerializer):
 
     image = Base64ImageField(required=False)
     author = UserSerializer()
+    comments_count = serializers.SerializerMethodField()
+
+    def get_comments_count(self, obj):
+        return obj.comments.count()
 
     class Meta:
         model = Post
-        fields = ('id', 'title', 'author', 'text', 'pub_date', 'image')
+        fields = ('id', 'title', 'author', 'text', 'pub_date',
+                  'image', 'comments_count')
 
 
 class PostCreateSerializer(PostSerializer):
@@ -39,9 +44,21 @@ class TagSerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     """Сериализатор для комментариев."""
 
+    author = UserSerializer()
+
     class Meta:
         model = Comment
-        fields = ('id', 'text', 'pub_date')
+        fields = ('id', 'text', 'pub_date', 'author')
+
+
+class CommentCreateSerializer(serializers.ModelSerializer):
+    """Сериализатор для комментариев."""
+
+    author = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    class Meta:
+        model = Comment
+        fields = ('id', 'text', 'pub_date', 'author')
 
 
 class ShortNewsListSerializer(serializers.ModelSerializer):
