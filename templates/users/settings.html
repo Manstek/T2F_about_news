@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="settings-container" id="settingsContainer">
+    <div class="loading">Загрузка настроек...</div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async function () {
+    const container = document.getElementById('settingsContainer');
+
+    if (!localStorage.getItem('access_token')) {
+        window.location.href = '/auth/signin/';
+        return;
+    }
+
+    let currentUser = null;
+
+    async function loadUserData() {
+        try {
+            const response = await fetch('/api/users/me/', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                }
+            });
+            if (!response.ok) throw new Error('Ошибка загрузки данных');
+            currentUser = await response.json();
+            renderSettingsForm();
+        } catch (error) {
+            console.error('Ошибка:', error);
+            container.innerHTML = '<div class="error">Не удалось загрузить данные пользователя</div>';
+        }
+    }
+
+    function validateTelegramId(telegramId) {
+        if (!telegramId) return true;
+        return /^\d+$/.test(telegramId) && telegramId.length >= 5;
+    }
+
+    function validateEmail(email) {
+        return email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    function renderSettingsForm() {
+        container.innerHTML = `
+            <div class="settings-card">
+                <h1 class="settings-title">Настройки аккаунта</h1>
+                
+                <div class="settings-form">
+                    <div class="form-group">
+                        <label for="firstName">Имя</label>
+                        <input type="text" id="firstName" value="${currentUser.first_name || ''}">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="lastName">Фамилия</label>
+                        <input type="text" id="lastName" value="${currentUser.last_name || ''}">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" value="${currentUser.username || ''}">
+                        <div class="input-note">Имя пользователя для входа в систему</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="telegram">Telegram ID</label>
+                        <input type="text" id="telegram" value="${currentUser.telegram_id || ''}" 
+                               placeholder="Только цифры (например: 123456789)">
+                        <div class="input-note">Можно оставить пустым</div>
+                        <div class="error-message" id="telegramError"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" value="${currentUser.email || ''}" 
+                               placeholder="example@domain.com">
+                        <div class="input-note">Обязательное поле</div>
+                        <div class="error-message" id="emailError"></div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button id="saveBtn" class="save-btn">Сохранить изменения</button>
+                        <button id="cancelBtn" class="cancel-btn">Отмена</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('telegram').addEventListener('input', function() {
+            const errorElement = document.getElementById('telegramError');
+            if (!validateTelegramId(this.value)) {
+                errorElement.textContent = 'Telegram ID должен содержать только цифры (минимум 5)';
+                this.classList.add('input-error');
+            } else {
+                errorElement.textContent = '';
+                this.classList.remove('input-error');
+            }
+        });
+
+        document.getElementById('email').addEventListener('input', function() {
+            const errorElement = document.getElementById('emailError');
+            if (!validateEmail(this.value)) {
+                errorElement.textContent = 'Введите корректный email адрес';
+                this.classList.add('input-error');
+            } else {
+                errorElement.textContent = '';
+                this.classList.remove('input-error');
+            }
+        });
+
+        document.getElementById('saveBtn').addEventListener('click', saveSettings);
+        document.getElementById('cancelBtn').addEventListener('click', () => {
+            window.location.href = '/profile/';
+        });
+    }
+
+    async function saveSettings() {
+        const firstName = document.getElementById('firstName').value.trim();
+        const lastName = document.getElementById('lastName').value.trim();
+        const username = document.getElementById('username').value.trim();
+        const telegram = document.getElementById('telegram').value.trim();
+        const email = document.getElementById('email').value.trim();
+
+        let isValid = true;
+
+        if (!firstName) {
+            alert('Имя не может быть пустым');
+            isValid = false;
+        }
+
+        if (!lastName) {
+            alert('Фамилия не может быть пустой');
+            isValid = false;
+        }
+
+        if (!username) {
+            alert('Username не может быть пустым');
+            isValid = false;
+        }
+
+        if (!validateTelegramId(telegram)) {
+            alert('Пожалуйста, введите корректный Telegram ID (только цифры, минимум 5)');
+            isValid = false;
+        }
+
+        if (!validateEmail(email)) {
+            alert('Пожалуйста, введите корректный email адрес');
+            isValid = false;
+        }
+
+        if (!isValid) return;
+
+        try {
+            const response = await fetch(`/api/users/${currentUser.id}/`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    first_name: firstName,
+                    last_name: lastName,
+                    username: username,
+                    telegram_id: telegram || null,
+                    email: email
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+
+                if (errorData.username && errorData.username[0] === "A user with that username already exists.") {
+                    throw new Error("Имя пользователя уже занято");
+                }
+
+                throw new Error(errorData.detail || 'Ошибка сохранения данных');
+            }
+
+            alert('Настройки успешно сохранены');
+            window.location.href = `/profile/${currentUser.id}/`;
+        } catch (error) {
+            console.error('Ошибка:', error);
+            alert(`Не удалось сохранить настройки: ${error.message}`);
+        }
+    }
+
+    loadUserData();
+});
+</script>
+
+<style>
+.settings-container {
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 20px;
+}
+
+.settings-card {
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    padding: 40px;
+}
+
+.settings-title {
+    margin-top: 0;
+    margin-bottom: 30px;
+    color: #333;
+    font-size: 28px;
+    text-align: center;
+}
+
+.settings-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    font-weight: 500;
+    color: #555;
+    font-size: 15px;
+}
+
+.form-group input {
+    padding: 12px 16px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: all 0.2s;
+}
+
+.form-group input:focus {
+    border-color: #4285f4;
+    box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+    outline: none;
+}
+
+.input-note {
+    font-size: 13px;
+    color: #888;
+    margin-top: 4px;
+}
+
+.error-message {
+    color: #dc3545;
+    font-size: 13px;
+    margin-top: 4px;
+    min-height: 18px;
+}
+
+.input-error {
+    border-color: #dc3545 !important;
+}
+
+.form-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+    justify-content: flex-end;
+}
+
+.save-btn {
+    background-color: #4285f4;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.save-btn:hover {
+    background-color: #3367d6;
+}
+
+.cancel-btn {
+    background-color: #f5f5f5;
+    color: #555;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.cancel-btn:hover {
+    background-color: #e0e0e0;
+}
+
+.loading, .error {
+    text-align: center;
+    padding: 30px;
+    color: #666;
+}
+
+.error {
+    color: #dc3545;
+}
+</style>
+{% endblock %}

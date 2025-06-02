@@ -3,12 +3,40 @@
 
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/tag_list.css' %}">
+    <style>
+        .search-container {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .search-input {
+            padding: 10px 15px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            font-size: 16px;
+            max-width: 300px;
+            width: 100%;
+            transition: all 0.3s;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #4285f4;
+            box-shadow: 0 2px 5px rgba(66, 133, 244, 0.2);
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
 <div class="tags-container">
     <h1>Мои теги</h1>
     <p>Выберите теги, которые вам интересны</p>
+    
+    <div class="search-container">
+        <input type="text" id="tagSearchInput" class="search-input" placeholder="Поиск по тегам...">
+    </div>
     
     <div class="tags-list" id="tagsList">
         <div class="loading">Загрузка тегов...</div>
@@ -23,15 +51,17 @@
 document.addEventListener('DOMContentLoaded', async function() {
     const tagsList = document.getElementById('tagsList');
     const saveTagsBtn = document.getElementById('saveTagsBtn');
+    const tagSearchInput = document.getElementById('tagSearchInput');
     let selectedTags = [];
-    
+    let allTags = [];
+
     // Проверка авторизации
     if (!localStorage.getItem('access_token')) {
         window.location.href = '/auth/signin/';
         return;
     }
-    
-    // Загрузка тегов
+
+    // Загрузка всех тегов
     async function loadTags() {
         try {
             const response = await fetch('/api/tags/', {
@@ -39,7 +69,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     'Authorization': `Bearer ${localStorage.getItem('access_token')}`
                 }
             });
-            
             if (!response.ok) throw new Error('Ошибка загрузки тегов');
             const data = await response.json();
             return data.results;
@@ -49,8 +78,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             return [];
         }
     }
-    
-    // Загрузка выбранных тегов пользователя
+
+    // Загрузка тегов пользователя
     async function loadUserTags() {
         try {
             const response = await fetch('/api/users/me/', {
@@ -58,49 +87,51 @@ document.addEventListener('DOMContentLoaded', async function() {
                     'Authorization': `Bearer ${localStorage.getItem('access_token')}`
                 }
             });
-            
             if (!response.ok) return [];
             const userData = await response.json();
-            return userData.tags || [];
+            return userData.tags ? userData.tags.map(tag => tag.id) : [];
         } catch (error) {
-            console.error('Ошибка загрузки данных пользователя:', error);
+            console.error('Ошибка загрузки тегов пользователя:', error);
             return [];
         }
     }
-    
+
     // Отображение тегов
     async function renderTags() {
         tagsList.innerHTML = '<div class="loading">Загрузка тегов...</div>';
-        
-        const [allTags, userTagIds] = await Promise.all([
+        const [tags, userTagIds] = await Promise.all([
             loadTags(),
             loadUserTags()
         ]);
-        
+
         selectedTags = [...userTagIds];
-        
+        allTags = tags;
+
         if (allTags.length === 0) {
             tagsList.innerHTML = '<div class="empty">Теги не найдены</div>';
             return;
         }
-        
+
+        updateDisplayedTags(allTags);
+    }
+
+    // Обновление отображаемых тегов
+    function updateDisplayedTags(filteredTags) {
         tagsList.innerHTML = '';
-        
-        allTags.forEach(tag => {
+        filteredTags.forEach(tag => {
             const isSelected = selectedTags.includes(tag.id);
             const tagElement = document.createElement('div');
             tagElement.className = `tag-item ${isSelected ? 'selected' : ''}`;
             tagElement.dataset.tagId = tag.id;
-            
+
             tagElement.innerHTML = `
                 <input type="checkbox" class="tag-checkbox" ${isSelected ? 'checked' : ''} style="display: none;">
                 ${tag.name}
             `;
-            
+
             tagElement.addEventListener('click', function() {
                 const tagId = parseInt(this.dataset.tagId);
                 const index = selectedTags.indexOf(tagId);
-                
                 if (index === -1) {
                     selectedTags.push(tagId);
                     this.classList.add('selected');
@@ -108,19 +139,28 @@ document.addEventListener('DOMContentLoaded', async function() {
                     selectedTags.splice(index, 1);
                     this.classList.remove('selected');
                 }
-                
                 this.querySelector('.tag-checkbox').checked = !this.querySelector('.tag-checkbox').checked;
             });
-            
+
             tagsList.appendChild(tagElement);
         });
     }
-    
+
+    // Обработка поиска
+    tagSearchInput.addEventListener('input', function() {
+        const query = this.value.trim().toLowerCase();
+        const filteredTags = allTags.filter(tag =>
+            tag.name.toLowerCase().includes(query)
+        );
+        updateDisplayedTags(filteredTags);
+    });
+
     // Сохранение выбранных тегов
     async function saveSelectedTags() {
+        console.log('Отправляемые теги:', selectedTags);
         saveTagsBtn.disabled = true;
         saveTagsBtn.textContent = 'Сохранение...';
-        
+
         try {
             const response = await fetch('/api/users/select_tag/', {
                 method: 'POST',
@@ -129,14 +169,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    tag: selectedTags  // Изменено с tag_ids на tag
+                    tag: selectedTags
                 })
             });
-            
+
             if (response.ok) {
                 alert('Теги успешно сохранены!');
             } else {
-                throw new Error('Ошибка сохранения тегов');
+                const errorData = await response.json();
+                console.error('Ошибка при сохранении тегов:', errorData);
+                alert('Не удалось сохранить теги');
             }
         } catch (error) {
             console.error('Ошибка:', error);
@@ -146,7 +188,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             saveTagsBtn.textContent = 'Сохранить выбор';
         }
     }
-    
+
     // Инициализация
     saveTagsBtn.addEventListener('click', saveSelectedTags);
     renderTags();
@@ -154,4 +196,3 @@ document.addEventListener('DOMContentLoaded', async function() {
 </script>
 
 {% endblock %}
-

@@ -17,7 +17,7 @@ class CustomUserViewSet(viewsets.ModelViewSet):
 
     queryset = User.objects.all().order_by('id')
     serializer_class = UserSerializer
-    http_method_names = ['get', 'post']
+    http_method_names = ['get', 'post', 'patch']
 
     def get_permissions(self):
         if self.action == 'me':
@@ -25,7 +25,9 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         return [permissions.IsAuthenticatedOrReadOnly(),]
 
     def get_object(self):
-        return self.request.user
+        if self.action == 'me':
+            return self.request.user
+        return super().get_object()
 
     def create(self, request, *args, **kwargs):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
@@ -137,3 +139,18 @@ class NewsDetailView(View):
 class PostDetailView(View):
     def get(self, request, pk):
         return render(request, 'blog/post_detail.html')
+
+
+class ProfileDetailView(View):
+    def get(self, request, user_id):
+        return render(request, 'users/profile.html')
+
+
+class SettingsView(View):
+    def get(self, request):
+        return render(request, 'users/settings.html')
+
+
+class AboutAuthorView(View):
+    def get(self, request):
+        return render(request, 'includes/about.html')

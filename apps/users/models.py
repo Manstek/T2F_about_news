@@ -54,6 +54,9 @@ class User(AbstractUser):
                                null=True, default=None,
                                verbose_name='Аватарка')
 
+    email = models.EmailField(unique=True, blank=True,
+                              verbose_name='email')
+
     def save(self, *args, **kwargs):
         if self.is_superuser:
             self.role = 'admin'

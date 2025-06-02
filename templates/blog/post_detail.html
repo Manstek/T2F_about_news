@@ -216,7 +216,9 @@ document.addEventListener('DOMContentLoaded', async function () {
                             `<div class="avatar-initials">${authorInitials}</div>`}
                         <div>
                             <div class="author-name">${post.author.first_name} ${post.author.last_name}</div>
-                            <div class="author-username">@${post.author.username}</div>
+                            <div class="author-username">
+                                <a href="/profile/${post.author.id}/">@${post.author.username}</a>
+                            </div>
                         </div>
                     </div>
                     <div class="post-header-right">
@@ -254,6 +256,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 </div>
             </div>
         `;
+
 
         if (isCurrentUserPost) {
             document.querySelector('.delete-post-btn').addEventListener('click', deletePost);
@@ -417,21 +420,32 @@ document.addEventListener('DOMContentLoaded', async function () {
                                 `<div class="avatar-initials">${authorInitials}</div>`}
                             <div class="comment-author-info">
                                 <div class="comment-author-name">${comment.author.first_name} ${comment.author.last_name}</div>
-                                <div class="comment-author-username">@${comment.author.username}</div>
+                                <div class="comment-author-username">
+                                    <a href="/profile/${comment.author.id}/">@${comment.author.username}</a>
+                                </div>
                             </div>
                         </div>
-                        <div class="comment-date">${formattedDate}</div>
+                        <div class="comment-header-right">
+                            <span class="comment-date">${formattedDate}</span>
+                            ${isCurrentUserComment ? `
+                                <div class="comment-actions">
+                                    ${isEditable ? `
+                                        <button class="edit-comment-btn">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    ` : ''}
+                                    <button class="delete-comment-btn">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
                     </div>
                     <div class="comment-text">${comment.text}</div>
-                    ${isCurrentUserComment ? `
-                        <div class="comment-actions">
-                            ${isEditable ? `<button class="edit-comment-btn">Редактировать</button>` : ''}
-                            <button class="delete-comment-btn">Удалить</button>
-                        </div>
-                    ` : ''}
                 </div>
             `;
         }).join('');
+
 
         document.querySelectorAll('.delete-comment-btn').forEach(btn => {
             btn.addEventListener('click', async function () {
@@ -455,16 +469,32 @@ document.addEventListener('DOMContentLoaded', async function () {
 
                 const saveBtn = document.createElement('button');
                 saveBtn.textContent = 'Сохранить';
-                saveBtn.classList.add('save-comment-btn');
+                saveBtn.className = 'save-comment-btn';
+
+                const cancelBtn = document.createElement('button');
+                cancelBtn.textContent = 'Отмена';
+                cancelBtn.className = 'cancel-comment-btn';
+
+                const buttonsContainer = document.createElement('div');
+                buttonsContainer.className = 'edit-comment-buttons';
+                buttonsContainer.appendChild(saveBtn);
+                buttonsContainer.appendChild(cancelBtn);
 
                 commentTextElement.replaceWith(textarea);
-                btn.replaceWith(saveBtn);
+                textarea.insertAdjacentElement('afterend', buttonsContainer);
+                this.style.display = 'none';
 
                 saveBtn.addEventListener('click', async () => {
                     const newText = textarea.value.trim();
                     if (!newText) return;
                     const updated = await editComment(commentId, newText);
                     if (updated) loadAndRenderComments(page);
+                });
+
+                cancelBtn.addEventListener('click', () => {
+                    textarea.replaceWith(commentTextElement);
+                    buttonsContainer.remove();
+                    btn.style.display = 'block';
                 });
             });
         });
@@ -512,12 +542,12 @@ document.addEventListener('DOMContentLoaded', async function () {
     gap: 10px;
 }
 
-.post-actions {
+.post-actions, .comment-actions {
     display: flex;
     gap: 8px;
 }
 
-.post-actions button {
+.post-actions button, .comment-actions button {
     width: 32px;
     height: 32px;
     border-radius: 50%;
@@ -531,12 +561,12 @@ document.addEventListener('DOMContentLoaded', async function () {
     transition: all 0.2s;
 }
 
-.post-actions button:hover {
+.post-actions button:hover, .comment-actions button:hover {
     background-color: #4285f4;
     color: white;
 }
 
-.post-actions button i {
+.post-actions button i, .comment-actions button i {
     font-size: 14px;
 }
 
@@ -604,39 +634,40 @@ document.addEventListener('DOMContentLoaded', async function () {
     background-color: #ffcdd2;
 }
 
-.edit-form-buttons {
+.edit-form-buttons, .edit-comment-buttons {
     display: flex;
     gap: 10px;
     justify-content: flex-end;
+    margin-top: 10px;
 }
 
-.save-post-btn {
+.save-post-btn, .save-comment-btn {
     background-color: #4285f4;
     color: white;
     border: none;
-    padding: 10px 20px;
+    padding: 8px 16px;
     border-radius: 6px;
     cursor: pointer;
     font-size: 14px;
     transition: background-color 0.2s;
 }
 
-.save-post-btn:hover {
+.save-post-btn:hover, .save-comment-btn:hover {
     background-color: #3367d6;
 }
 
-.cancel-post-btn {
+.cancel-post-btn, .cancel-comment-btn {
     background-color: #f5f5f5;
     color: #555;
     border: none;
-    padding: 10px 20px;
+    padding: 8px 16px;
     border-radius: 6px;
     cursor: pointer;
     font-size: 14px;
     transition: background-color 0.2s;
 }
 
-.cancel-post-btn:hover {
+.cancel-post-btn:hover, .cancel-comment-btn:hover {
     background-color: #e0e0e0;
 }
 
@@ -676,9 +707,23 @@ document.addEventListener('DOMContentLoaded', async function () {
     font-size: 14px;
 }
 
-.post-date {
+.post-date, .comment-date {
     color: #666;
     font-size: 14px;
+}
+
+.comment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.comment-header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
 }
 
 .post-title {
@@ -728,13 +773,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     border-bottom: 1px solid #f5f5f5;
 }
 
-.comment-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-}
-
 .comment-author-info {
     margin-left: 10px;
 }
@@ -744,47 +782,22 @@ document.addEventListener('DOMContentLoaded', async function () {
     color: #333;
 }
 
-.comment-date {
-    color: #888;
-    font-size: 13px;
-}
-
 .comment-text {
     margin: 8px 0 8px 65px;
     color: #444;
     line-height: 1.5;
 }
 
-.comment-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 10px;
-    margin-left: 65px;
-}
-
-.comment-actions button {
-    background: none;
-    border: none;
-    color: #4285f4;
-    cursor: pointer;
-    font-size: 13px;
-    padding: 2px 5px;
-}
-
-.comment-actions button:hover {
-    text-decoration: underline;
-}
-
 .edit-comment-textarea {
     width: 100%;
-    padding: 8px;
+    padding: 10px;
     border: 1px solid #ddd;
     border-radius: 4px;
     resize: vertical;
-    min-height: 60px;
-    margin-bottom: 5px;
+    min-height: 80px;
     font-family: inherit;
     font-size: 14px;
+    margin-left: 65px;
 }
 
 .empty-comments {

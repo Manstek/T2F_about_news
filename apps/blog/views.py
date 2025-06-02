@@ -4,10 +4,11 @@ from django.db.models import Count
 from rest_framework import viewsets, permissions, mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.pagination import LimitOffsetPagination
 
 from apps.blog.models import Post, ShortNews
 
-from apps.users.models import Tag
+from apps.users.models import Tag, User
 
 from apps.blog.serializers import (
     PostSerializer, TagSerializer, CommentSerializer, ShortNewsListSerializer,
@@ -33,7 +34,16 @@ class PostViewSet(viewsets.ModelViewSet):
         return super().get_serializer_class()
 
     def get_queryset(self):
-        return Post.objects.annotate(comments_count=Count('comments')).order_by('-pub_date')
+        return Post.objects.annotate(
+            comments_count=Count('comments')).order_by('-pub_date')
+
+    @action(detail=False, methods=['get'], url_path='user/(?P<user_id>[^/.]+)')
+    def user_posts(self, request, user_id=None):
+        """Возвращает список Постов текущего пользователя."""
+        user = get_object_or_404(User, id=user_id)
+        posts = Post.objects.filter(author=user).all()
+        serializer = PostSerializer(posts, many=True)
+        return Response(serializer.data)
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -83,20 +93,25 @@ class NewsViewSet(viewsets.ModelViewSet):
     serializer_class = ShortNewsListSerializer
     http_method_names = ['get']
     queryset = ShortNews.objects.all()
+    pagination_class = LimitOffsetPagination
 
     @action(detail=False, methods=['get'], url_path='my')
     def my_news(self, request):
-        """Возвращает сжатые новости по тегам текущего пользователя."""
         user_tags = request.user.tags.all()
-
         if not user_tags.exists():
             return Response([])
 
         short_news = ShortNews.objects.filter(
-            news__tag__in=user_tags).select_related(
-                'news', 'news__tag').order_by('-news__pub_date').distinct()
+            news__tag__in=user_tags
+        ).select_related('news', 'news__tag').order_by('-news__pub_date').distinct()
 
-        serializer = ShortNewsListSerializer(short_news, many=True)
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(short_news, request, view=self)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(short_news, many=True)
         return Response(serializer.data)
 
     @action(detail=False, methods=['get'], url_path='short')

@@ -13,6 +13,14 @@ from apps.users.models import Tag, UserTag
 User = get_user_model()
 
 
+class TagSerializer(serializers.ModelSerializer):
+    """Сериализатор для отображения тегов."""
+
+    class Meta:
+        model = Tag
+        fields = ('id', 'name')
+
+
 class CustomUserCreateSerializer(UserCreateSerializer):
     """Сериализатор для создания пользователя."""
 
@@ -28,11 +36,14 @@ class CustomUserCreateSerializer(UserCreateSerializer):
 class UserSerializer(serializers.ModelSerializer):
     """Сериализатор для просмотра своего профиля."""
 
+    tags = TagSerializer(many=True, read_only=True)
+
     class Meta:
         model = User
         fields = (
             'id', 'username', 'email', 'first_name',
-            'last_name', 'tags', 'avatar')
+            'last_name', 'tags', 'avatar', 'telegram_id',
+            'date_joined')
 
 
 class CustomPasswordSerializer(serializers.Serializer):

@@ -13,9 +13,7 @@
         <div class="loading">Загрузка постов...</div>
     </div>
     
-    <div class="pagination" id="pagination">
-
-    </div>
+    <div class="pagination" id="pagination"></div>
 </div>
 
 <script>
@@ -30,7 +28,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         window.location.href = '/auth/signin/';
         return;
     }
-    
+
     // Загрузка постов
     async function loadPosts(page = 1) {
         try {
@@ -49,21 +47,22 @@ document.addEventListener('DOMContentLoaded', async function() {
             return null;
         }
     }
-    
+
     // Отображение постов
     function renderPosts(data) {
         if (!data || !data.results || data.results.length === 0) {
             postsList.innerHTML = '<div class="empty">Посты не найдены</div>';
             return;
         }
-        
+
         postsList.innerHTML = '';
-        
+
         data.results.forEach(post => {
             const postElement = document.createElement('div');
             postElement.className = 'post-card';
-            
-            // Форматирование даты
+            postElement.setAttribute('data-id', post.id);
+            postElement.style.cursor = 'pointer';
+
             const pubDate = new Date(post.pub_date);
             const formattedDate = pubDate.toLocaleDateString('ru-RU', {
                 year: 'numeric',
@@ -72,7 +71,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 hour: '2-digit',
                 minute: '2-digit'
             });
-            
+
             postElement.innerHTML = `
                 <div class="post-header">
                     <div class="post-avatar">
@@ -94,20 +93,24 @@ document.addEventListener('DOMContentLoaded', async function() {
                     ${post.image ? `<img src="${post.image}" class="post-image" alt="Изображение поста">` : ''}
                 </div>
             `;
-            
+
+            postElement.addEventListener('click', () => {
+                window.location.href = `/posts/${post.id}/`;
+            });
+
             postsList.appendChild(postElement);
         });
     }
-    
+
     // Отображение пагинации
     function renderPagination(data) {
         if (!data || (!data.next && !data.previous)) {
             pagination.innerHTML = '';
             return;
         }
-        
+
         pagination.innerHTML = '';
-        
+
         // Кнопка "Назад"
         if (data.previous) {
             const prevBtn = document.createElement('button');
@@ -119,17 +122,17 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
             pagination.appendChild(prevBtn);
         }
-        
+
         // Номера страниц
         const totalPages = Math.ceil(data.count / postsPerPage);
         const maxVisiblePages = 5;
         let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
         let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-        
+
         if (endPage - startPage + 1 < maxVisiblePages) {
             startPage = Math.max(1, endPage - maxVisiblePages + 1);
         }
-        
+
         for (let i = startPage; i <= endPage; i++) {
             const pageBtn = document.createElement('button');
             pageBtn.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
@@ -140,7 +143,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
             pagination.appendChild(pageBtn);
         }
-        
+
         // Кнопка "Вперед"
         if (data.next) {
             const nextBtn = document.createElement('button');
@@ -153,20 +156,17 @@ document.addEventListener('DOMContentLoaded', async function() {
             pagination.appendChild(nextBtn);
         }
     }
-    
+
     // Загрузка и отображение постов
     async function loadAndRenderPosts() {
-        console.log('Loading page:', currentPage); // Для отладки
         postsList.innerHTML = '<div class="loading">Загрузка постов...</div>';
-        
         const data = await loadPosts(currentPage);
-        console.log('Received data:', data); // Для отладки
         if (data) {
             renderPosts(data);
             renderPagination(data);
         }
     }
-    
+
     // Инициализация
     loadAndRenderPosts();
 });

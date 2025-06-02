@@ -35,12 +35,90 @@
     .news-container {
         padding-top: 80px;
     }
+    
+    /* Стили для переключателя */
+    .filter-container {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 25px;
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .filter-label {
+        font-weight: 500;
+        color: #333;
+        font-size: 16px;
+    }
+    
+    .filter-toggle {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 24px;
+    }
+    
+    .filter-toggle input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .filter-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 24px;
+    }
+    
+    .filter-slider:before {
+        position: absolute;
+        content: "";
+        height: 16px;
+        width: 16px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+    
+    .filter-toggle input:checked + .filter-slider {
+        background-color: #4264fb;
+    }
+    
+    .filter-toggle input:checked + .filter-slider:before {
+        transform: translateX(26px);
+    }
+    
+    .filter-description {
+        color: #666;
+        font-size: 14px;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="news-container">
     <h1>Новости</h1>
+    
+    <div class="filter-container">
+        <label class="filter-toggle">
+            <input type="checkbox" id="filterToggle">
+            <span class="filter-slider"></span>
+        </label>
+        <div>
+            <div class="filter-label">Показывать только новости по моим тегам</div>
+            <div class="filter-description">Отображаются новости, соответствующие вашим интересам</div>
+        </div>
+    </div>
     
     <div class="news-list" id="newsList">
         <div class="loading">Загрузка новостей...</div>
@@ -55,6 +133,7 @@
 document.addEventListener('DOMContentLoaded', async function() {
     const newsList = document.getElementById('newsList');
     const pagination = document.getElementById('pagination');
+    const filterToggle = document.getElementById('filterToggle');
     let currentPage = 1;
     const newsPerPage = 5;
     
@@ -68,7 +147,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     async function loadNews(page = 1) {
         try {
             const offset = (page - 1) * newsPerPage;
-            const response = await fetch(`/api/news/?limit=${newsPerPage}&offset=${offset}`, {
+            const endpoint = filterToggle.checked 
+                ? `/api/news/my/?limit=${newsPerPage}&offset=${offset}`
+                : `/api/news/?limit=${newsPerPage}&offset=${offset}`;
+                
+            const response = await fetch(endpoint, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('access_token')}`
                 }
@@ -86,7 +169,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Отображение новостей
     function renderNews(data) {
         if (!data || !data.results || data.results.length === 0) {
-            newsList.innerHTML = '<div class="empty">Новости не найдены</div>';
+            const message = filterToggle.checked 
+                ? 'Нет новостей по вашим тегам'
+                : 'Новости не найдены';
+            newsList.innerHTML = `<div class="empty">${message}</div>`;
             return;
         }
         
@@ -189,6 +275,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             renderPagination(data);
         }
     }
+    
+    // Обработчик изменения переключателя
+    filterToggle.addEventListener('change', () => {
+        currentPage = 1; // Сбрасываем на первую страницу при изменении фильтра
+        loadAndRenderNews();
+    });
     
     // Инициализация
     loadAndRenderNews();
